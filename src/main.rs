@@ -1,12 +1,10 @@
+mod serial_utils;
 
 fn main() {
-    let ports: Vec<_> = match serialport::available_ports() {
-        Ok(val) => val,
-        Err(_) => panic!("welp, no ports, thats weird")
-    };
-    
-    
-    for i in ports {
-        println!("{}", i.port_name);
-    }
+    let mut v = vec![0x10, 0x07];
+    let add = vec![0x00, 0x00];
+
+    v.splice(1..1, add);
+
+    println!("{:02X?}", v);
 }
