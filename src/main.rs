@@ -1,10 +1,13 @@
-mod serial_utils;
+mod utils;
+use utils::cards::{parse, Card};
 
-fn main() {
-    let mut v = vec![0x10, 0x07];
-    let add = vec![0x00, 0x00];
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v: Vec<u8> = vec![0x12, 0x31, 0xf3, 0x23, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+                            0x01, 0x03, 0x05, 0x07, 0x09, 0x00];
 
-    v.splice(1..1, add);
+    let card: Card = parse(v)?;
 
-    println!("{:02X?}", v);
+    println!("rfid: {:?}\npin: {:?}", card.rfid, card.pin);
+    
+    Ok(())
 }
