@@ -7,6 +7,8 @@ type Пенис = dyn Error;
 use std::io::{self, Read, Write};
 use std::time::Duration;
 
+
+// TODO: implement passing port as an arg
 fn serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
     // config or something??
 //  let settings = SerialPortSettings {
@@ -21,7 +23,7 @@ fn serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
     // open
     let mut port = serialport::new("COM4", 38400).open()?;
 
-    // clear buffers
+    // clear buffer
     port.flush()?;
 
     // send
@@ -61,12 +63,14 @@ fn serial_read(addr: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
     serial_exchange(tx)
 }
 
-fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
+fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<(), Box<dyn Error>> {
     let mut tx = vec![0x11, 0x10];
     tx.splice(1..1, addr);
     tx.append(&mut data);
 
-    serial_exchange(tx)
+    serial_exchange(tx)?;
+    
+    Ok(())
 }
 
 // datetime related stuffs
@@ -109,7 +113,7 @@ pub fn datetime_to_bytes(datetime: String) -> Result<Vec<u8>, Box<dyn Error>> {
 
 pub fn get_datetime() -> Result<String, Box<dyn Error>> {
     // some internal code, reference protocol documentation for details
-    let rx = serial_exchange(vec![0x00, 0x00, 0x00, 0x07])?;
+    let rx = serial_exchange(vec![0x00, 0x00, 0x00, 0x00])?;
     bytes_to_datetime(rx)
 }
 
