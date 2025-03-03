@@ -1,20 +1,138 @@
-use std::{error::Error, path::Path, result, str::Chars};
-use super::{serial_read, serial_write};
+use std::error::Error;
 use serde::{Serialize, Deserialize};
 use chrono::Local;
+use super::{serial_read, serial_write};
 
-#[derive(Serialize, Deserialize)]
+type Address = Vec<u8>;  // 2-byte address 
+type CardData = Vec<u8>; // 16-byte card data
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Card {
     pub rfid: String,
     pub pin: String,
 }
 
 #[derive(Serialize, Deserialize)]
-struct CsvRecord {
-    addr: usize,
+pub struct CsvRecord {
+    #[serde(rename = "Address")]
+    address: String,
+    #[serde(rename = "RFID")]
     rfid: String,
+    #[serde(rename = "PIN")]
     pin: String,
 }
+
+// core operations
+pub fn bulk_read() -> Result<Vec<(Address, CardData)>, Box<dyn Error>> {
+    let mut cards = Vec::new();
+
+    for addr_high in 0x00..=0x0F {
+        for addr_low in 0x10..=0xFF {
+            let addr = vec![addr_high, addr_low];
+            match get_card(addr.clone()) {
+                Ok(data) => cards.push((addr, data)),
+                Err(e) => eprintln!("Skipped address {:02X}{:02X}: {}", addr_high, addr_low, e),
+            }
+        }
+    }
+    
+    Ok(cards)
+}
+
+pub fn bulk_write(entries: Vec<(Address, CardData)>) -> Result<(), Box<dyn Error>> {
+    for (addr, data) in entries {
+        validate_address(&addr)?;
+        validate_card_data(&data)?;
+        serial_write(addr, data)?;
+    }
+    Ok(())
+}
+
+// CSV handling
+pub fn export_csv(cards: Vec<(Address, CardData)>) -> Result<(), Box<dyn Error>> {
+    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
+    let mut writer = csv::Writer::from_path(format!("cards_{}.csv", timestamp))?;
+
+    for (addr, card_bytes) in cards {
+        let card = parse(card_bytes)?;
+        let address_num = u16::from_be_bytes([addr[0], addr[1]]);
+
+        writer.serialize(CsvRecord {
+            address: address_num.to_string(),
+            rfid: card.rfid,
+            pin: card.pin,
+        })?;
+    }
+
+    writer.flush()?;
+    Ok(())
+}
+
+pub fn import_csv(filename: &str) -> Result<Vec<(Address, CardData)>, Box<dyn Error>> {
+    let mut reader = csv::Reader::from_path(filename)?;
+    let mut entries = Vec::new();
+
+    for result in reader.deserialize() {
+        let record: CsvRecord = result?;
+        
+        let address = parse_csv_address(&record.address)?;
+        let data = reconstruct_card_data(&record)?;
+        
+        entries.push((address, data));
+    }
+
+    Ok(entries)
+}
+
+// Helper functions
+fn parse_csv_address(addr_str: &str) -> Result<Address, Box<dyn Error>> {
+    let addr_num: u16 = addr_str.parse()?;
+    Ok(addr_num.to_be_bytes().to_vec())
+}
+
+fn reconstruct_card_data(record: &CsvRecord) -> Result<CardData, Box<dyn Error>> {
+    let mut bytes = Vec::with_capacity(16);
+    
+    // Reconstruct RFID (10 bytes)
+    let rfid_bytes = hex::decode(pad_hex(&record.rfid, 20))?;
+    bytes.extend(rfid_bytes);
+    
+    // Reconstruct PIN (6 bytes)
+    let pin_encoded = record.pin.chars()
+        .flat_map(|c| ['0', c])
+        .collect::<String>();
+    let pin_bytes = hex::decode(pad_hex(&pin_encoded, 12))?;
+    bytes.extend(pin_bytes);
+
+    Ok(bytes)
+}
+
+fn validate_address(addr: &Address) -> Result<(), Box<dyn Error>> {
+    if addr.len() != 2 {
+        Err(format!("Invalid address length: {} bytes", addr.len()).into())
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_card_data(data: &CardData) -> Result<(), Box<dyn Error>> {
+    if data.len() != 16 {
+        Err(format!("Invalid card data length: {} bytes", data.len()).into())
+    } else {
+        Ok(())
+    }
+}
+
+fn pad_hex(s: &str, target_len: usize) -> String {
+    let mut padded = s.to_uppercase();
+    padded.truncate(target_len);
+    while padded.len() < target_len {
+        padded.push('F');
+    }
+    padded
+}
+
+// (Keep existing parse(), trim_leading_zero(), trim_empty(), delete(), bulk_delete() functions unchanged)
 
 pub fn get_card(addr: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
     if addr.len() !=2 { return Err("address invalid".into()); }
@@ -24,29 +142,6 @@ pub fn get_card(addr: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
     } 
 }
 
-pub fn bulk_read() -> Result<Vec<(Vec<u8>, Vec<u8>)>, Box<dyn Error>> {
-    let mut rx_vec: Vec<Vec<u8>> = vec![];
-
-    for addr_0 in 0x00..=0x0F {
-        for addr_1 in 0x10..=0xFF {
-            rx_vec.push(serial_read(vec![addr_0, addr_1])?);
-        }
-    }
-
-    Ok(rx_vec)
-}
-
-pub fn bulk_write(entries: Vec<Vec<u8>>) -> Result<(), Box<dyn Error>> {
-    let mut rx_vec: Vec<Vec<u8>> = vec![];
-
-    for addr_0 in 0x00..=0x0F {
-        for addr_1 in 0x10..=0xFF {
-            rx_vec.push(serial_write(vec![addr_0, addr_1],  )?);
-        }
-    }
-
-    Ok(())
-}
 
 pub fn parse(card_bytes: Vec<u8>) -> Result<Card, Box<dyn Error>> {
     if card_bytes.len() != 16 { 
@@ -61,83 +156,6 @@ pub fn parse(card_bytes: Vec<u8>) -> Result<Card, Box<dyn Error>> {
         pin
     })
 
-}
-
-
-pub fn export_csv(cards: Vec<Vec<u8>>) -> Result<(), Box<dyn Error>> {
-
-    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
-    let filename = format!("cards_{}.csv", timestamp);
-    
-    let mut writer = csv::Writer::from_path(filename)?;
-    
-    for (index, card_bytes) in cards.iter().enumerate() {
-        let card = parse(card_bytes.clone())?;
-        
-        writer.serialize(CsvRecord {
-            addr: index + 1, 
-            rfid: card.rfid,
-            pin: card.pin,
-        })?;
-    }
-    
-    writer.flush()?;
-    Ok(())
-}
-
-
-pub fn import_csv(filename: &str) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
-    let mut reader = csv::Reader::from_path(filename)?;
-    let mut records = Vec::new();
-
-    // Read and parse all records
-    for result in reader.deserialize() {
-        let record: CsvRecord = result?;
-        records.push(record);
-    }
-
-    // Sort by original address (1-based index)
-    records.sort_by_key(|r| r.addr);
-
-    let mut card_data = Vec::new();
-
-    for record in records {
-        // reconstruct RFID
-        let rfid_bytes = {
-            let mut hex_str = record.rfid.to_uppercase();
-            // Pad/cut to 20 characters (10 bytes)
-            hex_str.truncate(20);
-            while hex_str.len() < 20 {
-                hex_str.push('F');
-            }
-            hex::decode(hex_str)?
-        };
-
-        // reconstruct PIN
-        let pin_bytes = {
-            let mut hex_str = String::new();
-            
-            for c in record.pin.chars() {
-                hex_str.push('0');
-                hex_str.push(c);
-            }
-            
-            hex_str.truncate(12);
-            while hex_str.len() < 12 {
-                hex_str.push('F');
-            }
-            hex::decode(hex_str)?
-        };
-
-        // combine to 16 bytes
-        let mut card_bytes = Vec::with_capacity(16);
-        card_bytes.extend(rfid_bytes);
-        card_bytes.extend(pin_bytes);
-        
-        card_data.push(card_bytes);
-    }
-
-    Ok(card_data)
 }
 
 
