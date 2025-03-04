@@ -83,7 +83,7 @@ pub fn import_csv(filename: &str) -> Result<Vec<(Address, CardData)>, Box<dyn Er
     Ok(entries)
 }
 
-// Helper functions
+// helper functions
 fn parse_csv_address(addr_str: &str) -> Result<Address, Box<dyn Error>> {
     let addr_num: u16 = addr_str.parse()?;
     Ok(addr_num.to_be_bytes().to_vec())
@@ -92,11 +92,11 @@ fn parse_csv_address(addr_str: &str) -> Result<Address, Box<dyn Error>> {
 fn reconstruct_card_data(record: &CsvRecord) -> Result<CardData, Box<dyn Error>> {
     let mut bytes = Vec::with_capacity(16);
     
-    // Reconstruct RFID (10 bytes)
+    // reconstruct RFID
     let rfid_bytes = hex::decode(pad_hex(&record.rfid, 20))?;
     bytes.extend(rfid_bytes);
     
-    // Reconstruct PIN (6 bytes)
+    // reconstruct PIN
     let pin_encoded = record.pin.chars()
         .flat_map(|c| ['0', c])
         .collect::<String>();
@@ -130,8 +130,6 @@ fn pad_hex(s: &str, target_len: usize) -> String {
     }
     padded
 }
-
-// (Keep existing parse(), trim_leading_zero(), trim_empty(), delete(), bulk_delete() functions unchanged)
 
 pub fn get_card(addr: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
     if addr.len() !=2 { return Err("address invalid".into()); }
