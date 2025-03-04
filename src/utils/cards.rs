@@ -48,7 +48,6 @@ pub fn bulk_write(entries: Vec<(Address, CardData)>) -> Result<(), Box<dyn Error
     Ok(())
 }
 
-// CSV handling
 pub fn export_csv(cards: Vec<(Address, CardData)>) -> Result<(), Box<dyn Error>> {
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
     let mut writer = csv::Writer::from_path(format!("cards_{}.csv", timestamp))?;

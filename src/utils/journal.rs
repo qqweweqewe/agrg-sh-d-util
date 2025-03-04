@@ -22,7 +22,7 @@ const EVENT_TYPES: [&str; 11] = [
     "Unlock",
     "Lock",
     "Handle Released",
-    "Forced Release",
+    "Forced Release/Break in",
     "Handle Fixed",
     "Programming Mode",
     "Wrong Admin Password",
