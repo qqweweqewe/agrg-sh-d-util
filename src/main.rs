@@ -1,69 +1,76 @@
+mod utils;
+
 use iced::{
-    Alignment, Sandbox, Settings, Theme, Element
+    widget::{text, button, column, row},
+    Sandbox, Settings,
 };
 
-//main entrypoint
 fn main() -> iced::Result {
-    AgrgUI::run(Settings::default())
+    Agrg::run(Settings::default())
 }
 
-//define a new struict for U
-struct AgrgUI {
-    //main variables
-    theme: Theme,
+#[derive(Clone, Copy)]
+enum Tab {
+    Settings,
+    Cards,
+    Journal
+}
+
+#[derive(Debug, Clone)]
+enum AgrgMsg {
+    DoNothing,
+    SettingsTab,
+    JournalTab,
+    CardsTab,
+}
+
+struct Agrg {
     tab: Tab,
 }
 
-// tabs enum
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum Tab {
-    Cards, 
-    Journal,
-    Settings
-}
+impl Sandbox for Agrg {
+    type Message = AgrgMsg;
 
-// possible messages
-#[derive(Debug, Clone)]
-enum Message {
-    SwitchTo(Tab),
-}
-
-// implement sandbox trait for app (simplified Application trait)
-
-impl Sandbox for AgrgUI {
-    type Message = Message;
-
-    // constructor
     fn new() -> Self {
         Self {
-            theme: Theme::GruvboxDark,
-            tab: Tab::Cards,
-
+            tab: Tab::Journal
         }
     }
 
-    //title
     fn title(&self) -> String {
-        String::from("AGRG SH-D utility")
+        "AGRG SH-D Utility".into()
     }
 
-    // theme
-    fn theme(&self) -> Theme {
-        self.theme.clone()
-    }
-
-    // update
-    fn update(&mut self, message: Message) {
-        match message {
-            Message::SwitchTo(next_tab) => {}
+    fn update(&mut self, message: Self::Message) {
+        self.tab = match message {
+            AgrgMsg::CardsTab => Tab::Cards,
+            AgrgMsg::JournalTab => Tab::Journal,
+            AgrgMsg::SettingsTab => Tab::Settings,
+            AgrgMsg::DoNothing => self.tab,
         }
-
     } 
 
-    // view
-    fn view(&self) -> Element<Message> {
-        "Test test".into()
-    }
-    
+    fn view(&self) -> iced::Element<Self::Message> {
+        column![
+            row![
+                button("Journal").on_press(AgrgMsg::JournalTab),
+                button("Cards").on_press(AgrgMsg::CardsTab),
+                button("Settings").on_press(AgrgMsg::SettingsTab)
+            ],
+            match self.tab {
+                Tab::Journal => {
+                    text("Journal here")
+                },
+                
+                Tab::Cards => {
+                    text("Cards here")
+                },
 
+                Tab::Settings => {
+                    text("Settings menu")
+                }
+            }
+        ]
+        .into()
+    }
 }
