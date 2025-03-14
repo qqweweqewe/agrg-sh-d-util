@@ -8,6 +8,15 @@ use std::io::{self, Read, Write};
 use std::time::Duration;
 
 
+pub fn set_port(port: String) {
+   unsafe {
+        PORT = port; 
+        println!("port is set: {}", PORT)
+   }
+}
+
+static mut PORT: String = String::new();
+
 // TODO: implement passing port as an arg
 fn serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
     // config or something??
@@ -21,39 +30,43 @@ fn serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
 //    };
 
     // open
-    let mut port = serialport::new("COM4", 38400).open()?;
 
-    // clear buffer
-    port.flush()?;
-
-    // send
-    port.write_all(&bin_message)?;
-    port.flush()?;
-
-    // wait for response
-    std::thread::sleep(Duration::from_millis(100));
-
-    // read response
-    let mut rx = Vec::new();
-    let mut serial_buf: Vec<u8> = vec![0; 16]; // buffer
+    unsafe {
+        let mut port = serialport::new(PORT.clone(), 38400).open()?;
     
-    loop {
-        match port.read(&mut serial_buf) {
-            Ok(t) => {
-                rx.extend_from_slice(&serial_buf[..t]);
-                // break if less bytes than in buffer are read
-                if t < serial_buf.len() {
-                    break;
-                }
-            }
-            Err(ref e) if e.kind() == io::ErrorKind::TimedOut => {
-                break; // timeout => no more data
-            }
-            Err(e) => return Err(e.into()),
-        }
-    }
+        // clear buffer
+        port.flush()?;
 
-    Ok(rx)
+        // send
+        port.write_all(&bin_message)?;
+        port.flush()?;
+
+        // wait for response
+        std::thread::sleep(Duration::from_millis(100));
+
+        // read response
+        let mut rx = Vec::new();
+        let mut serial_buf: Vec<u8> = vec![0; 16]; // buffer
+        
+        loop {
+            match port.read(&mut serial_buf) {
+                Ok(t) => {
+                    rx.extend_from_slice(&serial_buf[..t]);
+                    // break if less bytes than in buffer are read
+                    if t < serial_buf.len() {
+                        break;
+                    }
+                }
+                Err(ref e) if e.kind() == io::ErrorKind::TimedOut => {
+                    break; // timeout => no more data
+                }
+                Err(e) => return Err(e.into()),
+            }
+        }
+
+        Ok(rx)
+
+    }
 }
 
 fn serial_read(addr: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
@@ -127,13 +140,14 @@ pub fn set_datetime(datetime: String) -> Result<Vec<u8>, Box<dyn Error>>{
     serial_exchange(tx)
 }
 
-pub fn get_available_ports() -> Option<Vec<serialport::SerialPortInfo>> {
+pub fn get_available_ports() -> Option<Vec<String>> {
     serialport::available_ports()
         .ok()
         .map(|ports| {
             ports
                 .into_iter()
-                .filter(|p| matches!(p.port_type, serialport::SerialPortType::UsbPort(_)))
+                //.filter(|p| matches!(p.port_type, serialport::SerialPortType::UsbPort(_)))
+                .map(|p| p.port_name)
                 .collect()
         })
 }
@@ -150,3 +164,9 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
 
     Ok(rx_vec)
 }
+
+//pub fn write_mem(data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+    
+
+//}
+

@@ -28,6 +28,25 @@ const EVENT_TYPES: [&str; 11] = [
     "Wrong Admin Password",
 ];
 
+pub fn journal_entry_to_string(entry: JournalEntry) -> Vec<String> {
+   let mut out = vec![entry.timestamp];
+
+   // info construction
+   let info = match entry.data.as_str() {
+       "ffffffffffffffff" => {
+            format!("user_id:{}", entry.user_id)
+       },
+
+       _ => {
+            format!("entered:{}{}", entry.user_id, entry.data)
+       } 
+   };
+
+   out.push(format!("{} {}", entry.event_type, info));
+
+   out
+}
+
 pub fn parse_journal_entry(raw: &[u8]) -> Result<JournalEntry, Box<dyn Error>> {
     if raw.len() != 16 {
         return Err("Invalid journal entry length".into());
@@ -42,21 +61,21 @@ pub fn parse_journal_entry(raw: &[u8]) -> Result<JournalEntry, Box<dyn Error>> {
     // parse date 
     let date = format!(
         "20{:02X}-{:02X}-{:02X}", 
-        raw[5], raw[4], raw[3]     
+        raw[3], raw[5], raw[6]     
     );
 
-    // Parse event type
-    let event_byte = raw[6];
+    // parse event type
+    let event_byte = raw[7];
     let event_type = EVENT_TYPES
         .get(event_byte as usize)
         .unwrap_or(&"Unknown")
         .to_string();
 
-    // Parse user ID (byte 7)
-    let user_id = format!("{:03}", raw[7]); 
+    // parse user ID
+    let user_id = format!("{:03}", raw[8]); 
 
-    // Parse data (bytes 8-15)
-    let data = hex::encode(&raw[8..16]);
+    // parse data
+    let data = hex::encode(&raw[9..16]);
 
     Ok(JournalEntry {
         timestamp: format!("{} {}", date, time),
