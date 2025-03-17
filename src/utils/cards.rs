@@ -48,40 +48,35 @@ pub fn bulk_write(entries: Vec<(Address, CardData)>) -> Result<(), Box<dyn Error
     Ok(())
 }
 
-pub fn export_csv(cards: Vec<(Address, CardData)>) -> Result<(), Box<dyn Error>> {
+pub fn export_bin(cards: Vec<u8>) -> Result<(), Box<dyn Error>> {
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
-    let mut writer = csv::Writer::from_path(format!("cards_{}.csv", timestamp))?;
+    // let mut writer = csv::Writer::from_path()?;
 
-    for (addr, card_bytes) in cards {
-        let card = parse(card_bytes)?;
-        let address_num = u16::from_be_bytes([addr[0], addr[1]]);
+    // for (i, card_bytes) in cards.iter().enumerate() {
+        // let card = parse(*card_bytes)?;
+        // let address_num = u16::from_be_bytes([addr[0], addr[1]]);
 
-        writer.serialize(CsvRecord {
-            address: address_num.to_string(),
-            rfid: card.rfid,
-            pin: card.pin,
-        })?;
-    }
-
-    writer.flush()?;
+    std::fs::write(format!("cards_{}.bin", timestamp), cards)?;
     Ok(())
 }
 
-pub fn import_csv(filename: &str) -> Result<Vec<(Address, CardData)>, Box<dyn Error>> {
-    let mut reader = csv::Reader::from_path(filename)?;
-    let mut entries = Vec::new();
 
-    for result in reader.deserialize() {
-        let record: CsvRecord = result?;
-        
-        let address = parse_csv_address(&record.address)?;
-        let data = reconstruct_card_data(&record)?;
-        
-        entries.push((address, data));
-    }
 
-    Ok(entries)
-}
+// pub fn import_csv(filename: &str) -> Result<Vec<(Address, CardData)>, Box<dyn Error>> {
+//     let mut reader = csv::Reader::from_path(filename)?;
+//     let mut entries = Vec::new();
+
+//     for result in reader.deserialize() {
+//         let record: CsvRecord = result?;
+        
+//         let address = parse_csv_address(&record.address)?;
+//         let data = reconstruct_card_data(&record)?;
+        
+//         entries.push((address, data));
+//     }
+
+//     Ok(entries)
+// }
 
 // helper functions
 fn parse_csv_address(addr_str: &str) -> Result<Address, Box<dyn Error>> {
@@ -89,15 +84,15 @@ fn parse_csv_address(addr_str: &str) -> Result<Address, Box<dyn Error>> {
     Ok(addr_num.to_be_bytes().to_vec())
 }
 
-fn reconstruct_card_data(record: &CsvRecord) -> Result<CardData, Box<dyn Error>> {
+fn reconstruct(card: Card) -> Result<CardData, Box<dyn Error>> {
     let mut bytes = Vec::with_capacity(16);
     
     // reconstruct RFID
-    let rfid_bytes = hex::decode(pad_hex(&record.rfid, 20))?;
+    let rfid_bytes = hex::decode(pad_hex(&card.rfid, 20))?;
     bytes.extend(rfid_bytes);
     
     // reconstruct PIN
-    let pin_encoded = record.pin.chars()
+    let pin_encoded = card.pin.chars()
         .flat_map(|c| ['0', c])
         .collect::<String>();
     let pin_bytes = hex::decode(pad_hex(&pin_encoded, 12))?;
@@ -106,6 +101,17 @@ fn reconstruct_card_data(record: &CsvRecord) -> Result<CardData, Box<dyn Error>>
     Ok(bytes)
 }
 
+pub fn reconstruct_pin(pin_str: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let pin_encoded = pin_str.chars()
+        .flat_map(|c| ['0', c])
+        .collect::<String>();
+    Ok(hex::decode(pad_hex(&pin_encoded, 12))?)
+}
+
+pub fn reconstruct_rfid(rfid_str: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    Ok(hex::decode(pad_hex(&rfid_str, 20))?)
+}
+ 
 fn validate_address(addr: &Address) -> Result<(), Box<dyn Error>> {
     if addr.len() != 2 {
         Err(format!("Invalid address length: {} bytes", addr.len()).into())
