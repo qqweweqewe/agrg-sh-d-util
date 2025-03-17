@@ -155,13 +155,15 @@ pub fn get_available_ports() -> Option<Vec<String>> {
 pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
     let mut rx_vec: Vec<u8> = vec![];
 
-    for addr_0 in 0x00..=0x7f {
-        for addr_1 in 0x0..=0xf {
-            let mut rx_part = serial_read(vec![addr_0, addr_1*16])?;
-            rx_vec.append(&mut rx_part);
-        }
-    }
+    for base_addr in (0x0000..=0x7FFF).step_by(64) {
+        let addr_bytes = (base_addr as u16).to_be_bytes();
+        let command = vec![0x10, addr_bytes[0], addr_bytes[1], 0x40];
 
+        let mut rx_part = serial_exchange(command)?;
+        println!("Read 128 bytes from {:04X}", base_addr);
+        rx_vec.append(&mut rx_part);
+    }
+    println!("len:{:?}", rx_vec.len());
     Ok(rx_vec)
 }
 

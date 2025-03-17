@@ -56,7 +56,7 @@ pub fn export_bin(cards: Vec<u8>) -> Result<(), Box<dyn Error>> {
         // let card = parse(*card_bytes)?;
         // let address_num = u16::from_be_bytes([addr[0], addr[1]]);
 
-    std::fs::write(format!("cards_{}.bin", timestamp), cards)?;
+    std::fs::write(format!("cards_{}.agrg", timestamp), cards)?;
     Ok(())
 }
 
@@ -180,20 +180,20 @@ fn trim_leading_zero(s: String) -> String {
 fn trim_empty(s: String) -> String {
     // "FF" bytes are usually mean they're empty thats a usual memory mechanism in sh-d
     // check if the entire string is "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-    if s.chars().all(|c| c == 'F') {
+    if s.to_lowercase().chars().all(|c| c == 'f') {
         return String::new();
     }
 
-    if !s.chars().any(|c| c == 'F') {
+    if !s.to_lowercase().chars().any(|c| c == 'f') {
         return s
     }
 
     // count trailing "FF"s
     let mut count = 0;
-    let chars = s.chars().rev().collect::<Vec<_>>();
+    let chars = s.to_lowercase().chars().rev().collect::<Vec<_>>();
     let mut i = 0;
     while i + 1 < chars.len() {
-        if chars[i] == 'F' && chars[i + 1] == 'F' {
+        if chars[i] == 'f' && chars[i + 1] == 'f' {
             count += 1;
             i += 2;
         } else {
@@ -211,8 +211,9 @@ fn trim_empty(s: String) -> String {
     };
 
     // calculate new length and trim the string
+
+    s[..desired*2].to_string()
     
-    s[..(s.len() - (desired*2) +2)].to_string()
 }
 
 pub fn delete(addr: Vec<u8>) -> Result<(), Box<dyn Error>> {

@@ -101,7 +101,7 @@ impl Sandbox for Agrg {
             AgrgMsg::JournalTab => self.tab = Tab::Journal,
             AgrgMsg::SettingsTab => self.tab = Tab::Settings,
             AgrgMsg::ExportSettings => {
-//this
+                utils::settings::export_bin(self.data[0x0000..=0x000f].to_vec());
             },
             AgrgMsg::ImportSettings => {
 //this
@@ -192,13 +192,15 @@ impl Sandbox for Agrg {
 // tab ui functions
 
 fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
-
+    println!("journal tab");
     match data.as_slice() {
         [] => "No journal loaded".into(),
         _ => {    
-            let journal_entries: Vec<Vec<String>> = data[0x1000..0x8000]
-            .chunks(16)  // Split into 16-byte chunks
+            println!("journal is present obviously");
+            let journal_entries: Vec<Vec<String>> = data[0x1000..=0x7fff]
+            .chunks(16)  // split into 16-byte chunks
             .map(|chunk| {
+                println!("parsing entry: {:02X?}", chunk);
                 let parsed_entry = utils::journal::parse_journal_entry(chunk.to_vec()).expect("no journal");
                 utils::journal::journal_entry_to_string(parsed_entry)
             })
@@ -229,7 +231,7 @@ fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
 
             // combine columns into a row
             let data_row: Row<AgrgMsg> = Row::new()
-                .spacing(20)
+                .spacing(30)
                 .push(left_col)
                 .push(right_col)
                 .into();
@@ -259,7 +261,7 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
         [] => "No Card data available".into(),
         _ => {
 
-            let chunks: Vec<(String, String)> = data[0x0010..0x0fff]
+            let chunks: Vec<(String, String)> = data[0x0010..=0x0fff]
                 .chunks(16)
                 .map(|chunk| {
                     let card = utils::cards::parse(chunk.to_vec()).expect("wow, something is REALLY off..");
