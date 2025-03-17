@@ -155,9 +155,9 @@ pub fn get_available_ports() -> Option<Vec<String>> {
 pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
     let mut rx_vec: Vec<u8> = vec![];
 
-    for addr_0 in 0x00..=0x7F {
-        for addr_1 in 0x00..=0xFF {
-            let mut rx_part = serial_read(vec![addr_0, addr_1])?;
+    for addr_0 in 0x00..=0x7f {
+        for addr_1 in 0x0..=0xf {
+            let mut rx_part = serial_read(vec![addr_0, addr_1*16])?;
             rx_vec.append(&mut rx_part);
         }
     }
@@ -168,9 +168,9 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
 pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
     let mut c = 0;
     for addr_0 in 0x00..=0x7F {
-        for addr_1 in 0x00..=0xFF {
+        for addr_1 in 0x0..=0xF {
             serial_write(
-                vec![addr_0, addr_1],
+                vec![addr_0, addr_1*16],
                 data[c..c+16].to_vec()
             )?;
             c += 16;
