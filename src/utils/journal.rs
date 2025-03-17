@@ -47,7 +47,7 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Vec<String> {
    out
 }
 
-pub fn parse_journal_entry(raw: &[u8]) -> Result<JournalEntry, Box<dyn Error>> {
+pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>> {
     if raw.len() != 16 {
         return Err("Invalid journal entry length".into());
     }
@@ -94,7 +94,7 @@ pub fn bulk_journal_read() -> Result<Vec<JournalEntry>, Box<dyn Error>> {
             let addr = vec![addr_high, addr_low];
             let data = super::serial_read(addr)?;
             
-            match parse_journal_entry(&data) {
+            match parse_journal_entry(data) {
                 Ok(entry) => entries.push(entry),
                 Err(e) => eprintln!("Failed to parse entry at {:02X}{:02X}: {}", 
                     addr_high, addr_low, e),

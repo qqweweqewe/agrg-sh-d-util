@@ -1,9 +1,9 @@
 mod utils;
 
 use iced::{
-    alignment::{Horizontal, Vertical},
-    widget::{text, button, column, row, pick_list, container, Container},
-    Sandbox, Settings, Alignment, Length
+    alignment::{Horizontal, Vertical}, 
+    widget::{button, column, container, pick_list, row, text, Text, Row, Column, Container, Space}, 
+    Alignment, Length, Sandbox, Settings
 };
 
 fn main() -> iced::Result {
@@ -23,13 +23,16 @@ enum AgrgMsg {
     JournalTab,
     SerialChoice(String),
     CardsTab,
-    ExportJournal
+    ExportJournal,
+    MemDump,
+    MemUpload
 }
 
 struct Agrg {
     tab: Tab,
     ports: Vec<String>,
     port: Option<String>,
+    data: Vec<u8>
 }
 
 impl Sandbox for Agrg {
@@ -41,6 +44,7 @@ impl Sandbox for Agrg {
             ports: utils::get_available_ports()
                 .expect("No Ports Found! Connect your device and restart the program"),
             port: None,
+            data: Vec::new()
         }
     }
 
@@ -63,6 +67,18 @@ impl Sandbox for Agrg {
             },
             AgrgMsg::ExportJournal => {
 
+            },
+            AgrgMsg::MemDump => {
+                self.data = match utils::mem_dump() {
+                    Ok(data) => data,
+                    Err(_) => {
+                        println!("ERR WRONG/INVALID PORT");
+                        Vec::new()
+                    }
+                } 
+            },
+            AgrgMsg::MemUpload => {
+
             }
         }
     } 
@@ -75,6 +91,10 @@ impl Sandbox for Agrg {
                 AgrgMsg::SerialChoice
             ).placeholder("Select a port").width(200),
 
+            button("Load").on_press(AgrgMsg::MemDump),
+            
+            Space::new(0, 20),
+            
             row![
                 button("Journal").on_press(AgrgMsg::JournalTab),
                 button("Cards").on_press(AgrgMsg::CardsTab),
@@ -84,15 +104,15 @@ impl Sandbox for Agrg {
             
             match self.tab {
                 Tab::Journal => {
-                    journal()
+                    journal(self.data.clone())
                 },
                 
                 Tab::Cards => {
-                    cards()
+                    cards(self.data.clone())
                 },
 
                 Tab::Settings => {
-                    settings()
+                    settings(self.data.clone())
                 }
             }
         ].width(Length::Fill)
@@ -102,52 +122,132 @@ impl Sandbox for Agrg {
 
 // tab ui functions
 
-fn journal() -> iced::Element<'static, AgrgMsg> {
+fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
 
-    let journal: Vec<Vec<String>> = utils::journal::bulk_journal_read()
-        .expect("something not gud happened :(")
-        .into_iter()
-        .map(utils::journal::journal_entry_to_string)
-        .collect();
-    
-    container(
-        column![
-            // exporn btn
-            button("Export CSV").on_press(AgrgMsg::ExportJournal),
+    match data.as_slice() {
+        [] => "No journal loaded".into(),
+        _ => {    
+            let journal_entries: Vec<Vec<String>> = data[0x1000..0x8000]
+            .chunks(16)  // Split into 16-byte chunks
+            .map(|chunk| {
+                let parsed_entry = utils::journal::parse_journal_entry(chunk.to_vec()).expect("no journal");
+                utils::journal::journal_entry_to_string(parsed_entry)
+            })
+            .collect();
+            
 
-            //row of headers
-            row![
-                "Date",
-                "Info"
-            ],
 
-            // row of coluimns with content
-            row![
-                
+
+            // two columns for data
+            let mut left_col: Column<AgrgMsg> = Column::new()
+                .spacing(10)
+                .align_items(Alignment::Start);
+            let mut right_col: Column<AgrgMsg> = Column::new()
+                .spacing(10)
+                .align_items(Alignment::Start);
+
+            // headers
+            left_col = left_col.push(Text::new("Date").width(Length::Fill));
+            right_col = right_col.push(Text::new("Info").width(Length::Fill));
+
+            // populate the columns
+            for row in journal_entries {
+                if row.len() >= 2 {
+                    left_col = left_col.push(Text::new(row[0].clone()).width(Length::Fill));
+                    right_col = right_col.push(Text::new(row[1].clone()).width(Length::Fill));
+                }
+            }
+
+            // combine columns into a row
+            let data_row: Row<AgrgMsg> = Row::new()
+                .spacing(20)
+                .push(left_col)
+                .push(right_col)
+                .into();
+
+            container(
                 column![
-                    "test1",
-                    "test2",
-                    "test3"
-                ],
-                column![
-                    "test1",
-                    "test2",
-                    "test3"
+                    // exporn btn
+                    button("Export CSV").on_press(AgrgMsg::ExportJournal),
+
+                    //row of headers
+                    row![
+                        "Date",
+                        "Info"
+                    ],
+
+                    // row of coluimns with content
+                    data_row
                 ]
-            ]
-        ]
-    ).padding(10)
-    .into()
+            ).padding(10)
+            .into()
+        }
+    }
 }   
 
-fn cards() -> iced::Element<'static, AgrgMsg>{
-    container(    
-        "Wow surprisingly enough"
-    ).padding(10)
-    .into()
+fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg>{
+    match data.as_slice() {
+        [] => "No data loaded".into(),
+        _ => {    
+            let card_entries: Vec<Vec<String>> = data[0x1000..0x8000]
+            .chunks(16)  // Split into 16-byte chunks
+            .map(|chunk| {
+                let parsed_entry = utils::journal::parse_journal_entry(chunk.to_vec()).expect("no journal");
+                utils::journal::journal_entry_to_string(parsed_entry)
+            })
+            .collect();
+            
+
+
+
+            // two columns for data
+            let mut left_col: Column<AgrgMsg> = Column::new()
+                .spacing(10)
+                .align_items(Alignment::Start);
+            let mut right_col: Column<AgrgMsg> = Column::new()
+                .spacing(10)
+                .align_items(Alignment::Start);
+
+            // headers
+            left_col = left_col.push(Text::new("Date").width(Length::Fill));
+            right_col = right_col.push(Text::new("Info").width(Length::Fill));
+
+            // populate the columns
+            for row in journal_entries {
+                if row.len() >= 2 {
+                    left_col = left_col.push(Text::new(row[0].clone()).width(Length::Fill));
+                    right_col = right_col.push(Text::new(row[1].clone()).width(Length::Fill));
+                }
+            }
+
+            // combine columns into a row
+            let data_row: Row<AgrgMsg> = Row::new()
+                .spacing(20)
+                .push(left_col)
+                .push(right_col)
+                .into();
+
+            container(
+                column![
+                    // exporn btn
+                    button("Export CSV").on_press(AgrgMsg::ExportJournal),
+
+                    //row of headers
+                    row![
+                        "Date",
+                        "Info"
+                    ],
+
+                    // row of coluimns with content
+                    data_row
+                ]
+            ).padding(10)
+            .into()
+        }
+    }
 }
 
-fn settings() -> iced::Element<'static, AgrgMsg>{
+fn settings(data: Vec<u8>) -> iced::Element<'static, AgrgMsg>{
     container(    
         "It works!!!"
     ).padding(10)

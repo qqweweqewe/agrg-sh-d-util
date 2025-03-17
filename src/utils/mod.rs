@@ -90,7 +90,7 @@ fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<(), Box<dyn Error>> 
 
 pub fn bytes_to_datetime(raw: Vec<u8>) -> Result<String, Box<dyn Error>> {  
     Ok(format!("{:02X?}:{:02X?}:{:02X?} {:02X?}.{:02X?}.20{:02X?}", 
-        raw[2], raw[1], raw[0], raw[4], raw[5], raw[6]))
+        raw[2], raw[1], raw[0], raw[3], raw[5], raw[6]))
 }
 
 pub fn datetime_to_bytes(datetime: String) -> Result<Vec<u8>, Box<dyn Error>> {
@@ -117,8 +117,8 @@ pub fn datetime_to_bytes(datetime: String) -> Result<Vec<u8>, Box<dyn Error>> {
         u8::from_str_radix(seconds, 16)?,
         u8::from_str_radix(minutes, 16)?,
         u8::from_str_radix(hours, 16)?,
-        0x00,
         u8::from_str_radix(day, 16)?,
+        0x00,
         u8::from_str_radix(month, 16)?,
         u8::from_str_radix(year_last_two, 16)?,
     ])
@@ -165,8 +165,21 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(rx_vec)
 }
 
-//pub fn write_mem(data: Vec<u8>) -> Result<(), Box<dyn Error>> {
-    
+pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+    let mut c = 0;
+    for addr_0 in 0x00..=0x7F {
+        for addr_1 in 0x00..=0xFF {
+            serial_write(
+                vec![addr_0, addr_1],
+                data[c..c+16].to_vec()
+            )?;
+            c += 16;
+        }
+    }
+    Ok(())
+}
 
-//}
+// TODO: implement that one
+// pub fn text_info() -> Result<String, Box<dyn std::error::Error>> {
 
+// }
