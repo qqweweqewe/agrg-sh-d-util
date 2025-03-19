@@ -1,8 +1,9 @@
+use iced::widget::shader::wgpu::hal::empty;
 use serde::{Serialize, Deserialize};
 use chrono::Local;
 use std::error::Error;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct JournalEntry {
     #[serde(rename = "Timestamp")]
     timestamp: String,
@@ -15,21 +16,32 @@ pub struct JournalEntry {
 }
 
 const EVENT_TYPES: [&str; 11] = [
-    "Power On",
-    "Registered User",
-    "Unknown UID",
-    "Unknown PIN",
-    "Unlock",
-    "Lock",
-    "Handle Released",
-    "Forced Release/Break in",
-    "Handle Fixed",
-    "Programming Mode",
-    "Wrong Admin Password",
+    "Power On", // 0x00
+    "Registered User", // 0x01
+    "Unknown UID", // 0x02
+    "Unknown PIN", // 0x03
+    "Unknown", // 0x04
+    "Unknown", // 0x05
+    "Handle Released", // 0x06
+    "Forced Release/Break In", // 0x07
+    "Fixed Handle Pos", // 0x08
+    "Programming Mode", // 0x09
+    "Wrong Admin Password", // 0x0A
 ];
 
-pub fn journal_entry_to_string(entry: JournalEntry) -> Vec<String> {
-   let mut out = vec![entry.timestamp];
+pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> {
+
+    let empty_entry = JournalEntry { 
+        timestamp: String::from("20FF-FF-FF FF:FF:FF"), 
+        event_type: String::from("Unknown"), 
+        user_id: String::from("255"), 
+        data: String::from("ffffffffffffff") 
+    };
+    
+    if entry == empty_entry {
+        return None
+    }
+
 
    // info construction
    let info = match entry.data.as_str() {
@@ -42,9 +54,9 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Vec<String> {
        } 
    };
 
-   out.push(format!("{} {}", entry.event_type, info));
+   let info = format!("{} {}", entry.event_type, info);
 
-   out
+   Some((entry.timestamp, info))
 }
 
 pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>> {
@@ -77,12 +89,14 @@ pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>>
     // parse data
     let data = hex::encode(&raw[9..16]);
 
-    Ok(JournalEntry {
+
+    let res = JournalEntry {
         timestamp: format!("{} {}", date, time),
         event_type,
         user_id,
         data,
-    })
+    };
+    Ok(res)
 }
 
 pub fn bulk_journal_read() -> Result<Vec<JournalEntry>, Box<dyn Error>> {

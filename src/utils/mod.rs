@@ -1,6 +1,7 @@
 pub mod cards;
 pub mod journal;
 pub mod settings;
+pub mod mock;
 
 use std::error::Error;
 type Пенис = dyn Error;
