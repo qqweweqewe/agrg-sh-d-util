@@ -1,14 +1,16 @@
 mod utils;
+mod styles;
 
 use iced::{
-    alignment::{Horizontal, Vertical}, 
-    widget::{text_input, button, column, container, pick_list, row, text, Text, Row, Column, Container, Space, scrollable}, 
+    alignment::Horizontal, 
+    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Row, Space, Text}, 
     Alignment, Length, Sandbox, Settings
 };
 use utils::journal::{export_journal_csv, JournalEntry};
-use rfd::FileDialog;
+use chrono::Local;
 
 fn main() -> iced::Result {
+
     Agrg::run(Settings::default())
 }
 
@@ -25,14 +27,15 @@ enum AgrgMsg {
     JournalTab,
     CardsTab,
     SerialChoice(String),
+    RefreshPorts,
     MemDump,
     ExportJournal,
     ExportCards,
     ImportCards,
-    DeleteCard,
     ExportSettings,
     ImportSettings,
     MemUpload,
+    TimeSync,
     CardEdited(usize, bool, String), // index / UID(0) or PIN(1) / new_value
 }
 
@@ -41,6 +44,8 @@ struct Agrg {
     ports: Vec<String>,
     port: Option<String>,
     data: Vec<u8>,
+    splash: String,
+    time: String,
 }
 
 impl Sandbox for Agrg {
@@ -49,10 +54,15 @@ impl Sandbox for Agrg {
     fn new() -> Self {
         Self {
             tab: Tab::Journal,
-            ports: utils::get_available_ports()
-                .expect("No Ports Found! Connect your device and restart the program"),
+            ports: match utils::get_available_ports() {
+                None => vec![String::from("No ports found")],
+                Some(ports) => ports
+            },
             port: None,
             data: Vec::new(),
+            splash: String::new(),
+            //time: String::new(),
+            time: Local::now().format("%H:%M:%S %d.%m.%Y").to_string(),
         }
     }
 
@@ -61,7 +71,7 @@ impl Sandbox for Agrg {
     }
 
     fn theme(&self) -> iced::Theme {
-        iced::Theme::GruvboxDark
+        iced::Theme::CatppuccinMocha
     }
 
     fn update(&mut self, message: Self::Message) {
@@ -71,18 +81,18 @@ impl Sandbox for Agrg {
                 let base_address = 0x0010 + chunk_index * 16;
     
                 // get target byte range
-                let (start, end) = if is_uid {
-                    (base_address, base_address + 10)
+                let start = if is_uid {
+                    base_address
                 } else {
-                    (base_address + 10, base_address + 16)
+                    base_address + 10
                 };
     
                 // convert hex string to bytes
                 let required_length = if is_uid { 10 } else { 6 };
                 let parsed_bytes = if is_uid {
-                    utils::cards::reconstruct_rfid(value).expect("invalid format")
+                    utils::cards::rfid_to_bytes(value).expect("invalid format")
                 } else {
-                    utils::cards::reconstruct_pin(value).expect("invalid format")
+                    utils::cards::pin_to_bytes(value).expect("invalid format")
                 };
 
                 if parsed_bytes.len() == required_length {
@@ -95,35 +105,43 @@ impl Sandbox for Agrg {
                 }
             },
             AgrgMsg::ImportCards => {
-//this
-
+                
             },
             AgrgMsg::JournalTab => self.tab = Tab::Journal,
             AgrgMsg::SettingsTab => self.tab = Tab::Settings,
             AgrgMsg::ExportSettings => {
-                utils::settings::export_bin(self.data[0x0000..=0x000f].to_vec());
+                _ = utils::settings::export_bin(self.data[0x0000..=0x000f].to_vec());
             },
             AgrgMsg::ImportSettings => {
 //this
             },
-            AgrgMsg::DeleteCard => {
-//and this
-            }
             AgrgMsg::SerialChoice(s) => { 
                 self.port = Some(s); 
-                utils::set_port(self.port.clone().expect("no available ports")) 
+                utils::set_port(self.port.clone().expect("no available ports")); 
+                self.splash = utils::text_info()
+            },
+            AgrgMsg::RefreshPorts => {
+                self.ports = match utils::get_available_ports() {
+                    None => vec![String::from("No ports found")],
+                    Some(ports) => ports
+                }
             },
             AgrgMsg::ExportJournal => {
                 let journal_entries: Vec<JournalEntry> = self.data[0x1000..0x8000]
                     .chunks(16) 
                     .map(|chunk| utils::journal::parse_journal_entry(chunk.to_vec()).expect("error processing journal entry"))
                     .collect();
-                export_journal_csv(journal_entries);
+                _ = export_journal_csv(journal_entries);
             },
             AgrgMsg::ExportCards => {
-                utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec());
+                _ = utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec());
             },
             AgrgMsg::MemDump => {
+                self.time = match utils::get_datetime() {
+                    Ok(res) => res,
+                    Err(_) => "Error".to_string()
+                };
+
                 // self.data = match utils::mem_dump() {
                 //     Ok(data) => data,
                 //     Err(_) => {
@@ -131,7 +149,6 @@ impl Sandbox for Agrg {
                 //         Vec::new()
                 //     }
                 // } 
-                println!("loading mock data");
                 self.data = utils::mock::get_data()
             },
             AgrgMsg::MemUpload => {
@@ -146,36 +163,56 @@ impl Sandbox for Agrg {
                         }
                     }
                 }
+            }, 
+            AgrgMsg::TimeSync => {
+                self.time = Local::now().format("%H:%M:%S %d.%m.%Y").to_string(); 
+                _ = utils::set_datetime(self.time.clone())
             }
         }
     } 
 
     fn view(&self) -> iced::Element<Self::Message> {
         column![
-            pick_list(
-                self.ports.clone(),
-                self.port.clone(),
-                AgrgMsg::SerialChoice
-            ).placeholder("Select a port").width(200),
-
             row![
-                button("Load data").on_press(AgrgMsg::MemDump),
-                Space::new(10, 0),
-                button("Upload data").on_press(AgrgMsg::MemUpload)
-            ],
+                pick_list(
+                    self.ports.clone(),
+                    self.port.clone(),
+                    AgrgMsg::SerialChoice
+                ).placeholder("Select a port").width(200),
+                button("Refresh").on_press(AgrgMsg::RefreshPorts)
+            ].spacing(20),
 
             Space::new(0, 20),
             
             row![
-                button("Journal").on_press(AgrgMsg::JournalTab),
-                button("Cards").on_press(AgrgMsg::CardsTab),
-                button("Settings").on_press(AgrgMsg::SettingsTab)
-            ].width(Length::Fill)
-            .align_items(Alignment::Center).spacing(10),
+                button("Load data").on_press(AgrgMsg::MemDump),
+
+                button("Upload data").on_press(AgrgMsg::MemUpload)
+            ].spacing(20),
+
+            Space::new(0, 20),
             
+            container(
+                row![
+                    button("Journal").on_press(AgrgMsg::JournalTab),
+                    button("Cards").on_press(AgrgMsg::CardsTab),
+                    button("Settings").on_press(AgrgMsg::SettingsTab)
+                ].spacing(20),
+            ).width(Length::Fill).align_x(Horizontal::Center),
+            
+            Space::new(0, 20),
+
+            container(
+                row![
+                    Text::new(&self.time),
+                    button("Sync").on_press(AgrgMsg::TimeSync)
+                ].spacing(20)
+            ).width(Length::Fill).align_x(Horizontal::Center),
+
+            Space::new(0, 20),
+
             match self.tab {
                 Tab::Journal => {
-                    println!("loading journal..");
                     journal(self.data.clone())
                 },
                 
@@ -259,56 +296,68 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
         [] => "No Card data available".into(),
         _ => {
-
             let chunks: Vec<(String, String)> = data[0x0010..=0x0fff]
                 .chunks(16)
                 .map(|chunk| {
-                    let card = utils::cards::parse(chunk.to_vec()).expect("wow, something is REALLY off..");
-                    (card.pin, card.rfid)
+                    let card = utils::cards::parse(chunk.to_vec()).expect("Invalid card data");
+                    (card.rfid, card.pin)
                 })
                 .collect();
-        
-            let mut address_col = Column::new().spacing(10);
-            let mut uid_col = Column::new().spacing(10);
-            let mut pin_col = Column::new().spacing(10);
-        
-            // headers
-            address_col = address_col.push(Text::new("Address"));
-            uid_col = uid_col.push(Text::new("Card"));
-            pin_col = pin_col.push(Text::new("PIN"));
-        
+
+            // header row
+            let header = row![
+                Text::new("Address").width(60),
+                Text::new("Card Data").width(200),
+                Text::new("PIN Data").width(120),
+            ].spacing(20);
+
+            // card rows
+            let mut card_rows = Column::new()
+                .spacing(10)
+                .push(header);
+
             for (index, chunk) in chunks.iter().enumerate() {
                 let address = 0x0010 + index * 16;
                 let address_text = format!("{:04X}", address);
-        
-                address_col = address_col.push(Text::new(address_text));
-                
-                uid_col = uid_col.push(
-                    text_input(chunk.0.as_str(), chunk.0.as_str())
-                        .on_input(move |v| AgrgMsg::CardEdited(index, true, v))
-                        .width(200)
-                );
-                
-                pin_col = pin_col.push(
-                    text_input(chunk.1.as_str(), chunk.1.as_str())
-                        .on_input(move |v| AgrgMsg::CardEdited(index, false, v))
-                        .width(120)
-                );
+
+                let card_row = row![
+                    Text::new(address_text).width(60),
+                    text_input(&chunk.0, &chunk.0)
+                        .on_input(move |v| {
+                            let cleaned = sanitize_hex_input(&v, 20);
+                            AgrgMsg::CardEdited(index, true, cleaned)
+                        })
+                        .width(200),
+                    text_input(&chunk.1, &chunk.1)
+                        .on_input(move |v| {
+                            let cleaned = sanitize_hex_input(&v, 12);
+                            AgrgMsg::CardEdited(index, false, cleaned)
+                        })
+                        .width(120),
+                ].spacing(20);
+
+                card_rows = card_rows.push(card_row);
             }
-        
+
             container(
                 column![
-                    button("Export settings").on_press(AgrgMsg::ExportCards),
-                    row!["Address", "Card Data", "PIN Data"],
-                    Row::new()
-                        .spacing(20)
-                        .push(address_col)
-                        .push(uid_col)
-                        .push(pin_col)
-                ]
+                    row![
+                        button("Export").on_press(AgrgMsg::ExportCards),
+                        button("Import").on_press(AgrgMsg::ImportCards)
+                    ],
+                    scrollable(card_rows).height(Length::Fill)
+                ].spacing(10)
             ).padding(10).into()
         }
     }
+}
+
+fn sanitize_hex_input(input: &str, max_length: usize) -> String {
+    let cleaned: String = input.chars()
+        .filter(|c| c.is_ascii_hexdigit())
+        .map(|c| c.to_ascii_uppercase())
+        .collect();
+    cleaned.chars().take(max_length).collect()
 }
 
 

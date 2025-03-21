@@ -1,4 +1,3 @@
-use iced::widget::shader::wgpu::hal::empty;
 use serde::{Serialize, Deserialize};
 use chrono::Local;
 use std::error::Error;
@@ -99,25 +98,6 @@ pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>>
     Ok(res)
 }
 
-pub fn bulk_journal_read() -> Result<Vec<JournalEntry>, Box<dyn Error>> {
-    let mut entries = Vec::with_capacity(1792);
-
-    // journal spans addresses 0x1000-0x7FFF
-    for addr_high in 0x10..=0x7F {
-        for addr_low in 0x00..=0xFF {
-            let addr = vec![addr_high, addr_low];
-            let data = super::serial_read(addr)?;
-            
-            match parse_journal_entry(data) {
-                Ok(entry) => entries.push(entry),
-                Err(e) => eprintln!("Failed to parse entry at {:02X}{:02X}: {}", 
-                    addr_high, addr_low, e),
-            }
-        }
-    }
-
-    Ok(entries)
-}
 
 pub fn export_journal_csv(entries: Vec<JournalEntry>) -> Result<(), Box<dyn Error>> {
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");

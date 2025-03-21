@@ -8,7 +8,6 @@ type Пенис = dyn Error;
 use std::io::{self, Read, Write};
 use std::time::Duration;
 
-
 pub fn set_port(port: String) {
    unsafe {
         PORT = port; 
@@ -183,6 +182,14 @@ pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // TODO: implement that one
-// pub fn text_info() -> Result<String, Box<dyn std::error::Error>> {
+pub fn text_info() -> String {
+    let bytes = match serial_exchange(vec![0x20, 0x00, 0x00, 0x10]) {
+        Ok(res) => res,
+        Err(_) => vec![]
+    };
 
-// }
+    match String::from_utf8(bytes) {
+        Ok(res ) => res,
+        _ => String::new()
+    }
+}
