@@ -18,7 +18,7 @@ pub fn set_port(port: String) {
 static mut PORT: String = String::new();
 
 // TODO: implement passing port as an arg
-fn serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
+fn atomic_serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
     // config or something??
 //  let settings = SerialPortSettings {
 //        baud_rate: 38400,
@@ -42,7 +42,7 @@ fn serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
         port.flush()?;
 
         // wait for response
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(10));
 
         // read response
         let mut rx = Vec::new();
@@ -73,7 +73,7 @@ fn serial_read(addr: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut tx = vec![0x10, 0x10];
     tx.splice(1..1, addr);
 
-    serial_exchange(tx)
+    atomic_serial_exchange(tx)
 }
 
 fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<(), Box<dyn Error>> {
@@ -81,7 +81,7 @@ fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<(), Box<dyn Error>> 
     tx.splice(1..1, addr);
     tx.append(&mut data);
 
-    serial_exchange(tx)?;
+    atomic_serial_exchange(tx)?;
     
     Ok(())
 }
@@ -126,7 +126,7 @@ pub fn datetime_to_bytes(datetime: String) -> Result<Vec<u8>, Box<dyn Error>> {
 
 pub fn get_datetime() -> Result<String, Box<dyn Error>> {
     // some internal code, reference protocol documentation for details
-    let rx = serial_exchange(vec![0x00, 0x00, 0x00, 0x00])?;
+    let rx = atomic_serial_exchange(vec![0x00, 0x00, 0x00, 0x00])?;
     bytes_to_datetime(rx)
 }
 
@@ -137,7 +137,7 @@ pub fn set_datetime(datetime: String) -> Result<Vec<u8>, Box<dyn Error>>{
     
     tx.append(&mut datetime_bytes);
 
-    serial_exchange(tx)
+    atomic_serial_exchange(tx)
 }
 
 pub fn get_available_ports() -> Option<Vec<String>> {
@@ -159,7 +159,7 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
         let addr_bytes = (base_addr as u16).to_be_bytes();
         let command = vec![0x10, addr_bytes[0], addr_bytes[1], 0x40];
 
-        let mut rx_part = serial_exchange(command)?;
+        let mut rx_part = atomic_serial_exchange(command)?;
         println!("Read 128 bytes from {:04X}", base_addr);
         rx_vec.append(&mut rx_part);
     }
@@ -183,8 +183,8 @@ pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
 
 // TODO: implement that one
 pub fn text_info() -> String {
-    let bytes = match serial_exchange(vec![0x20, 0x00, 0x00, 0x10]) {
-        Ok(res) => res,
+    let bytes = match atomic_serial_exchange(vec![0x20, 0x00, 0x00, 0xFF]) {
+        Ok(res) => cards::trim_empty(res),
         Err(_) => vec![]
     };
 

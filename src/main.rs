@@ -22,7 +22,20 @@ enum Tab {
 }
 
 #[derive(Debug, Clone)]
+struct SettingsOptionWrapper {
+    label: String,
+    value: u8,
+}
+
+impl ToString for SettingsOptionWrapper {
+    fn to_string(&self) -> String {
+        self.label.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
 enum AgrgMsg {
+    SettingsUpdate(usize, u8),
     SettingsTab,
     JournalTab,
     CardsTab,
@@ -46,6 +59,7 @@ struct Agrg {
     data: Vec<u8>,
     splash: String,
     time: String,
+    settings_map: Vec<Vec<String>>,
 }
 
 impl Sandbox for Agrg {
@@ -61,8 +75,38 @@ impl Sandbox for Agrg {
             port: None,
             data: Vec::new(),
             splash: String::new(),
-            //time: String::new(),
+            //time: String::new()
             time: Local::now().format("%H:%M:%S %d.%m.%Y").to_string(),
+            settings_map: vec![
+                // mode
+                vec![
+                    "Card Reader".into(),
+                    "Controller".into()
+                ],
+                
+                // pinpad mode
+                vec![
+                    "Wiegand6".into(),
+                    "Wiegand26(hex)".into(),
+                    "Wiegand26(dec)".into(),
+                    "Off".into()
+                ],
+
+                // card reader mode
+                vec![
+                    "Wiegand26".into(),
+                    "Wiegand34".into(),
+                    "Off".into()
+                ],
+
+                // auto access mode
+                vec![
+                    "PIN or Card".into(),
+                    "PIN".into(),
+                    "Card".into(),
+                    "PIN and Card".into()
+                ]
+            ]
         }
     }
 
@@ -105,6 +149,19 @@ impl Sandbox for Agrg {
                 }
             },
             AgrgMsg::ImportCards => {
+                let new_data = match utils::cards::import_bin() {
+                    Ok(res) => res,
+                    Err(_) => { 
+                        println!("Import failed. Try again");
+                        Vec::new()
+                    }
+                };
+                
+                if new_data.len() != 255*16 {
+                    panic!("Invalid/Corrupted file");
+                }
+
+                 self.data[0x0010..0x1000].copy_from_slice(&new_data);
                 
             },
             AgrgMsg::JournalTab => self.tab = Tab::Journal,
@@ -114,6 +171,9 @@ impl Sandbox for Agrg {
             },
             AgrgMsg::ImportSettings => {
 //this
+            },
+            AgrgMsg::SettingsUpdate(addr, val) => {
+                self.data[addr] = val;
             },
             AgrgMsg::SerialChoice(s) => { 
                 self.port = Some(s); 
@@ -221,7 +281,7 @@ impl Sandbox for Agrg {
                 },
 
                 Tab::Settings => {
-                    settings(self.data.clone())
+                    settings(self.data.clone(), &self.settings_map)
                 }
             }
         ].width(Length::Fill)
@@ -360,11 +420,27 @@ fn sanitize_hex_input(input: &str, max_length: usize) -> String {
     cleaned.chars().take(max_length).collect()
 }
 
+fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
+    // row!["WIP"].into()
+    let mut column = Column::new();
 
-fn settings(data: Vec<u8>) -> iced::Element<'static, AgrgMsg>{
-    container(    
-        "WIP"
-    ).padding(10)                                                                                 
-    .into()
+        // pick list for each byte
+        for (index, &byte) in data[0..4].iter().enumerate() {
+            // currently selected option
+            let selected = option_map[index][byte as usize];
+
+            // pick list widget
+            let pick_list = pick_list(
+                option_map[index],
+                Some(selected),
+                move |selected_option| AgrgMsg::SettingsUpdate(index, selected_option.value),
+            );
+
+            column = column.push(pick_list);
+        }
+
+        column.into()
 }
+
+
 

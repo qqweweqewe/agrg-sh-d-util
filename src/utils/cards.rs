@@ -99,11 +99,20 @@ pub fn parse(card_bytes: Vec<u8>) -> Result<Card, Box<dyn Error>> {
 }
 
 
-fn trim_empty(data: Vec<u8>) -> Vec<u8> {
+pub fn trim_empty(data: Vec<u8>) -> Vec<u8> {
     let mut end = data.len();
     // iterate backward to find the first non-0xFF byte
     while end > 0 && data[end - 1] == 0xFF {
         end -= 1;
     }
     data[..end].to_vec()
+}
+
+pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
+    let file_path = FileDialog::new()
+        .set_title("Import File")
+        .save_file();
+
+    fs::read(file_path.expect("Invalid filepath"))
+
 }

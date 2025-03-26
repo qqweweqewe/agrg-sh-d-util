@@ -1,7 +1,7 @@
 use chrono::Local;
 
 struct DeviceSettings {
-    is_autonomous: u8,
+    main_mode: u8,
     numpad_wiegand_mode: u8,
     cardreader_wiegand_mode: u8,
     auto_access_mode: u8,
@@ -13,7 +13,7 @@ pub fn parse(data: Vec<u8>) -> Result<DeviceSettings, Box<dyn std::error::Error>
     match data.len() {
         16 => {
             Ok(DeviceSettings {
-                is_autonomous: data[0],
+                main_mode: data[0],
                 numpad_wiegand_mode: data[1],
                 cardreader_wiegand_mode: data[2],
                 auto_access_mode: data[3],
@@ -36,4 +36,21 @@ pub fn export_bin(cards: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
 
     std::fs::write(format!("settings_{}.agrg", timestamp), cards)?;
     Ok(())
+}
+
+pub fn import_bin() {}
+
+pub fn serialize(settings: DeviceSettings) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let mut res = vec![
+        settings.main_mode, 
+        settings.numpad_wiegand_mode,
+        settings.cardreader_wiegand_mode,
+        settings.auto_access_mode
+    ];
+
+    let mut append = settings.admin_password;
+
+    res.append(&mut append);
+
+    Ok(vec![])
 }
