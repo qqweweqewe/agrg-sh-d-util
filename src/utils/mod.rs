@@ -124,10 +124,10 @@ pub fn datetime_to_bytes(datetime: String) -> Result<Vec<u8>, Box<dyn Error>> {
     ])
 }
 
-pub fn get_datetime() -> Result<String, Box<dyn Error>> {
+pub fn get_datetime() -> Result<Vec<u8>, Box<dyn Error>> {
     // some internal code, reference protocol documentation for details
-    let rx = atomic_serial_exchange(vec![0x00, 0x00, 0x00, 0x00])?;
-    bytes_to_datetime(rx)
+    atomic_serial_exchange(vec![0x00, 0x00, 0x00, 0x00])
+    
 }
 
 pub fn set_datetime(datetime: String) -> Result<Vec<u8>, Box<dyn Error>>{
@@ -171,6 +171,7 @@ pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
     let mut c = 0;
     for addr_0 in 0x00..=0x7F {
         for addr_1 in 0x0..=0xF {
+            println!("uploading {}{}", addr_0, addr_1);
             serial_write(
                 vec![addr_0, addr_1*16],
                 data[c..c+16].to_vec()
