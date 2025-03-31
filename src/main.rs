@@ -197,19 +197,19 @@ impl Sandbox for Agrg {
                 _ = utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec());
             },
             AgrgMsg::MemDump => {
-                self.time = match utils::get_datetime() {
-                    Ok(res) => res,
-                    Err(_) => "Error".to_string()
-                };
+                // self.time = match utils::get_datetime() {
+                //     Ok(res) => res,
+                //     Err(_) => "Error".to_string()
+                // };
 
-                // self.data = match utils::mem_dump() {
-                //     Ok(data) => data,
-                //     Err(_) => {
-                //         println!("ERR WRONG/INVALID PORT");
-                //         Vec::new()
-                //     }
-                // } 
-                self.data = utils::mock::get_data()
+                self.data = match utils::mem_dump() {
+                    Ok(data) => data,
+                    Err(_) => {
+                        println!("ERR WRONG/INVALID PORT");
+                        Vec::new()
+                    }
+                } 
+                // self.data = utils::mock::get_data()
             },
             AgrgMsg::MemUpload => {
                 match self.data.as_slice() {
@@ -433,28 +433,27 @@ fn sanitize_hex_input(input: &str, max_length: usize) -> String {
 }
 
 fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
-    row!["WIP"].into()
-    // let mut column = Column::new();
+    // row!["WIP"].into()
+    let mut column = Column::new();
 
-    //     // pick list for each byte
-    //     for (index, &byte) in data[0..4].iter().enumerate() {
-    //         // currently selected option
-    //         let selected = option_map[index][byte as usize].clone();
+        // pick list for each byte
+        for (index, &byte) in data[0..4].iter().enumerate() {
+            // currently selected option
+            let selected = option_map[index][byte as usize].clone();
 
-    //         // pick list widget
-    //         let pick_list = pick_list(
-    //             option_map[index].clone(),
-    //             Some(selected),
-    //             move |selected, option_map| {
-                    
-    //                 AgrgMsg::SettingsUpdate(index, )
-    //             },
-    //         );
+            // closure with captured index
+            let on_select = move |new_selection: String| AgrgMsg::SettingsUpdate(index, new_selection);
 
-    //         column = column.push(pick_list);
-    //     }
+            // pick list widget
+            let pick_list = pick_list(
+                option_map[index].clone(),
+                Some(selected),
+                on_select
+            );
 
-    //     column.into()
+            column = column.push(pick_list);
+        }
+        column.into()
 }
 
 
