@@ -434,26 +434,27 @@ fn sanitize_hex_input(input: &str, max_length: usize) -> String {
 
 fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
     // row!["WIP"].into()
-    let mut column = Column::new();
+    let mut row = Row::new();
+    let headers = ["Working mode", "Pinpad mode", "Card reader mode", "Access mode"];
 
-        // pick list for each byte
-        for (index, &byte) in data[0..4].iter().enumerate() {
-            // currently selected option
-            let selected = option_map[index][byte as usize].clone();
+    // pick list for each byte
+    for (index, &byte) in data[0..4].iter().enumerate() {
+        // currently selected option
+        let selected = option_map[index][byte as usize].clone();
 
-            // closure with captured index
-            let on_select = move |new_selection: String| AgrgMsg::SettingsUpdate(index, new_selection);
+        // closure with captured index
+        let on_select = move |new_selection: String| AgrgMsg::SettingsUpdate(index, new_selection);
 
-            // pick list widget
-            let pick_list = pick_list(
-                option_map[index].clone(),
-                Some(selected),
-                on_select
-            );
+        // pick list widget
+        let pick_list = pick_list(
+            option_map[index].clone(),
+            Some(selected),
+            on_select
+        );
 
-            column = column.push(pick_list);
-        }
-        column.into()
+        row = row.push(column![headers[index], pick_list]);
+    }
+    row.into()
 }
 
 
