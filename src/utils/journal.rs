@@ -66,13 +66,13 @@ pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>>
     // parse timestamp
     let time = format!(
         "{:02X}:{:02X}:{:02X}",
-        raw[0], raw[1], raw[2]  // ss, mm, hh
+        raw[2], raw[1], raw[0]  // ss, mm, hh
     );
 
     // parse date 
     let date = format!(
         "20{:02X}-{:02X}-{:02X}", 
-        raw[3], raw[5], raw[6]     
+        raw[6], raw[5], raw[3]     
     );
 
     // parse event type
