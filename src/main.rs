@@ -35,7 +35,7 @@ impl ToString for SettingsOptionWrapper {
 
 #[derive(Debug, Clone)]
 enum AgrgMsg {
-    SettingsUpdate(usize, u8),
+    SettingsUpdate(usize, String),
     SettingsTab,
     JournalTab,
     CardsTab,
@@ -173,7 +173,7 @@ impl Sandbox for Agrg {
 //this
             },
             AgrgMsg::SettingsUpdate(addr, val) => {
-                self.data[addr] = val;
+                self.data[addr] = self.search(&val);
             },
             AgrgMsg::SerialChoice(s) => { 
                 self.port = Some(s); 
@@ -287,6 +287,18 @@ impl Sandbox for Agrg {
         ].width(Length::Fill)
         .into()
     }   
+}
+
+impl Agrg {
+    fn search(&self, val: &String) -> u8 {
+        for setting in self.settings_map.clone() {
+            for (id, entry) in setting.iter().enumerate() {
+                if val == entry { return id as u8 };
+            }
+        };
+        
+        0
+    }    
 }
 
 // tab ui functions
@@ -421,25 +433,28 @@ fn sanitize_hex_input(input: &str, max_length: usize) -> String {
 }
 
 fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
-    // row!["WIP"].into()
-    let mut column = Column::new();
+    row!["WIP"].into()
+    // let mut column = Column::new();
 
-        // pick list for each byte
-        for (index, &byte) in data[0..4].iter().enumerate() {
-            // currently selected option
-            let selected = option_map[index][byte as usize];
+    //     // pick list for each byte
+    //     for (index, &byte) in data[0..4].iter().enumerate() {
+    //         // currently selected option
+    //         let selected = option_map[index][byte as usize].clone();
 
-            // pick list widget
-            let pick_list = pick_list(
-                option_map[index],
-                Some(selected),
-                move |selected_option| AgrgMsg::SettingsUpdate(index, selected_option.value),
-            );
+    //         // pick list widget
+    //         let pick_list = pick_list(
+    //             option_map[index].clone(),
+    //             Some(selected),
+    //             move |selected, option_map| {
+                    
+    //                 AgrgMsg::SettingsUpdate(index, )
+    //             },
+    //         );
 
-            column = column.push(pick_list);
-        }
+    //         column = column.push(pick_list);
+    //     }
 
-        column.into()
+    //     column.into()
 }
 
 
