@@ -89,14 +89,14 @@ impl Sandbox for Agrg {
                     "Wiegand6".into(),
                     "Wiegand26(hex)".into(),
                     "Wiegand26(dec)".into(),
-                    "Off".into()
+                    "Pinpad Off".into()
                 ],
 
                 // card reader mode
                 vec![
                     "Wiegand26".into(),
                     "Wiegand34".into(),
-                    "Off".into()
+                    "Card Reader Off".into()
                 ],
 
                 // auto access mode
