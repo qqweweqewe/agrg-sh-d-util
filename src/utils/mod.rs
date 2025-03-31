@@ -42,7 +42,7 @@ fn atomic_serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пени�
         port.flush()?;
 
         // wait for response
-        std::thread::sleep(Duration::from_millis(10));
+        std::thread::sleep(Duration::from_millis(50));
 
         // read response
         let mut rx = Vec::new();
@@ -160,7 +160,7 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
         let command = vec![0x10, addr_bytes[0], addr_bytes[1], 0x40];
 
         let mut rx_part = atomic_serial_exchange(command)?;
-        println!("Read 128 bytes from {:04X}", base_addr);
+        println!("Read 64 bytes from {:04X}", base_addr);
         rx_vec.append(&mut rx_part);
     }
     println!("len:{:?}", rx_vec.len());
