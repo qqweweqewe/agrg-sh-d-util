@@ -22,18 +22,6 @@ enum Tab {
 }
 
 #[derive(Debug, Clone)]
-struct SettingsOptionWrapper {
-    label: String,
-    value: u8,
-}
-
-impl ToString for SettingsOptionWrapper {
-    fn to_string(&self) -> String {
-        self.label.clone()
-    }
-}
-
-#[derive(Debug, Clone)]
 enum AgrgMsg {
     SettingsUpdate(usize, String),
     SettingsTab,
@@ -170,7 +158,19 @@ impl Sandbox for Agrg {
                 _ = utils::settings::export_bin(self.data[0x0000..=0x000f].to_vec());
             },
             AgrgMsg::ImportSettings => {
-//this
+                let new_data = match utils::settings::import_bin() {
+                    Ok(res) => res,
+                    Err(_) => { 
+                        println!("Import failed. Try again");
+                        Vec::new()
+                    }
+                };
+
+                if new_data.len() != 16 {
+                    panic!("Invalid/Corrupted Settings binary");
+                }
+
+                self.data[0x0000..0x0010].copy_from_slice(&new_data);
             },
             AgrgMsg::SettingsUpdate(addr, val) => {
                 self.data[addr] = self.search(&val);

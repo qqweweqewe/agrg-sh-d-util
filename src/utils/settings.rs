@@ -38,7 +38,14 @@ pub fn export_bin(cards: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn import_bin() {}
+pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
+    let file_path = rfd::FileDialog::new()
+        .set_title("Import File")
+        .save_file();
+    
+    std::fs::read(file_path.expect("Invalid filepath"))
+    
+}
 
 pub fn serialize(settings: DeviceSettings) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut res = vec![

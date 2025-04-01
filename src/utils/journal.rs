@@ -43,15 +43,14 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
 
 
    // info construction
-   let info = match entry.data.as_str() {
-       "ffffffffffffffff" => {
-            format!("user_id:{}", entry.user_id)
-       },
+    let info = match entry.event_type.as_str() {
+        "Registered User" => { format!("{}", entry.user_id) },
+        "Unknown UID" => { format!("{}{}", entry.user_id, entry.data) },
+        "Unknown PIN" => { format!("{}{}", entry.user_id, entry.data) },
 
-       _ => {
-            format!("entered:{}{}", entry.user_id, entry.data)
-       } 
-   };
+        _ => String::new(),
+    };
+
 
    let info = format!("{} {}", entry.event_type, info);
 
