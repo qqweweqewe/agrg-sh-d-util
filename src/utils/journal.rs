@@ -21,9 +21,9 @@ const EVENT_TYPES: [&str; 11] = [
     "Unknown PIN", // 0x03
     "Unknown", // 0x04
     "Unknown", // 0x05
-    "Handle Released", // 0x06
-    "Forced Release/Break In", // 0x07
-    "Fixed Handle Pos", // 0x08
+    "Handle Unlocked", // 0x06
+    "Forced Unlock/Break In", // 0x07
+    "Handle Locked", // 0x08
     "Programming Mode", // 0x09
     "Wrong Admin Password", // 0x0A
 ];
