@@ -45,8 +45,8 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
    // info construction
     let info = match entry.event_type.as_str() {
         "Registered User" => { format!("{}", entry.user_id) },
-        "Unknown UID" => { format!("{}", entry.data) },
-        "Unknown PIN" => { format!("{}", entry.data) },
+        "Unknown UID" => { format!("{}{}", entry.user_id, entry.data) },
+        "Unknown PIN" => { format!("{}{}", entry.user_id, entry.data) },
 
         _ => String::new(),
     };
@@ -82,7 +82,7 @@ pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>>
         .to_string();
 
     // parse user ID
-    let user_id = format!("{:03}", raw[8]); 
+    let user_id = format!("{:02X}", raw[8]); 
 
     // parse data
     let data = hex::encode(&raw[9..16]);
