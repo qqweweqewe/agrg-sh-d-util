@@ -215,7 +215,7 @@ impl Sandbox for Agrg {
                 match self.data.as_slice() {
                     [] => println!("ERR WRONG/INVALID PORT"),
                     _ => {
-                        match utils::mem_upload(self.data[0x0000..0x0100].to_vec()) {
+                        match utils::mem_upload(self.data[0x0000..0x1000].to_vec()) {
                             Ok(_) => println!("Uploading.."),
                             Err(_) => {
                                 println!("ERR WRONG/INVALID PORT")
