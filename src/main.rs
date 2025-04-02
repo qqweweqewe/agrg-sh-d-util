@@ -3,8 +3,7 @@ mod styles;
 
 use iced::{
     alignment::Horizontal, 
-    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Row, Space, Text}, 
-    Alignment, Length, Sandbox, Settings
+    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Row, Space, Text}, Alignment, Length, Sandbox, Settings
 };
 use utils::journal::{export_journal_csv, JournalEntry};
 use chrono::Local;
@@ -284,7 +283,9 @@ impl Sandbox for Agrg {
                 Tab::Settings => {
                     settings(self.data.clone(), &self.settings_map)
                 }
-            }
+            },
+            Space::new(0, 20),
+            Text::new(utils::text_info()).height(100)
         ].width(Length::Fill)
         .into()
     }   
@@ -306,7 +307,7 @@ impl Agrg {
 
 fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
     match data.len() {
-        0..0x1000 => "No journal loaded".into(),
+        0..0x1000 => Text::new("No journal loaded").height(Length::Fill).into(),
         _ => {    
             let journal_entries: Vec<(String, String)> = data[0x1000..data.len()]
                 .chunks(16)
@@ -367,7 +368,7 @@ fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
 
 fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
-        [] => "No Card data available".into(),
+        [] => Text::new("No Card data available").height(Length::Fill).into(),
         _ => {
             let chunks: Vec<(String, String)> = data[0x0010..=0x0fff]
                 .chunks(16)
@@ -418,7 +419,7 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
                         button("Export").on_press(AgrgMsg::ExportCards),
                         button("Import").on_press(AgrgMsg::ImportCards)
                     ],
-                    scrollable(card_rows).height(Length::Fill)
+                    scrollable(card_rows).height(Length::Fill).width(Length::Fill)
                 ].spacing(10)
             ).padding(10).into()
         }
@@ -434,36 +435,40 @@ fn sanitize_hex_input(input: &str, max_length: usize) -> String {
 }
 
 fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
-    // row!["WIP"].into()
-    let mut row = Row::new();
-    let headers = ["Working mode", "Pinpad mode", "Card reader mode", "Access mode"];
+    match data.as_slice() {
+        [] => Text::new("No Data loaded").height(Length::Fill).into(),
+        _ => {    // row!["WIP"].into()
+            let mut row = Row::new();
+            let headers = ["Working mode", "Pinpad mode", "Card reader mode", "Access mode"];
 
-    // pick list for each byte
-    for (index, &byte) in data[0..4].iter().enumerate() {
-        // currently selected option
-        let selected = option_map[index][byte as usize].clone();
+            // pick list for each byte
+            for (index, &byte) in data[0..4].iter().enumerate() {
+                // currently selected option
+                let selected = option_map[index][byte as usize].clone();
 
-        // closure with captured index
-        let on_select = move |new_selection: String| AgrgMsg::SettingsUpdate(index, new_selection);
+                // closure with captured index
+                let on_select = move |new_selection: String| AgrgMsg::SettingsUpdate(index, new_selection);
 
-        // pick list widget
-        let pick_list = pick_list(
-            option_map[index].clone(),
-            Some(selected),
-            on_select
-        );
+                // pick list widget
+                let pick_list = pick_list(
+                    option_map[index].clone(),
+                    Some(selected),
+                    on_select
+                );
 
-        row = row.push(column![headers[index], pick_list]);
+                row = row.push(column![headers[index], pick_list]);
+            }
+
+
+            column![
+                row![
+                    button("Import").on_press(AgrgMsg::ImportSettings),
+                    button("Export").on_press(AgrgMsg::ExportSettings)
+                ].spacing(20),
+                row
+            ].spacing(20).height(Length::Fill).into()
+        }
     }
-
-
-    column![
-        row![
-            button("Import").on_press(AgrgMsg::ImportSettings),
-            button("Export").on_press(AgrgMsg::ExportSettings)
-        ].spacing(20),
-        row
-    ].spacing(20).into()
 }
 
 
