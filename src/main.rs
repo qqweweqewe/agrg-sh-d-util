@@ -23,6 +23,7 @@ enum Tab {
 #[derive(Debug, Clone)]
 enum AgrgMsg {
     SettingsUpdate(usize, String),
+    AdminPasswdEdited(String),
     SettingsTab,
     JournalTab,
     CardsTab,
@@ -107,6 +108,24 @@ impl Sandbox for Agrg {
 
     fn update(&mut self, message: Self::Message) {
         match message {
+            AgrgMsg::AdminPasswdEdited(str) => {
+                
+                let replacements: Vec<u8> = str.chars()
+                    .map(|c| c.to_digit(10).expect("invalid digit") as u8)
+                    .collect();
+
+                let mut repl_iter = replacements.into_iter();
+                for byte in self.data.iter_mut() {
+                    if (0x0A..0x10).contains(byte) {
+                        // Replace with the next byte from the input string's digits
+                        if let Some(new_byte) = repl_iter.next() {
+                            *byte = new_byte;
+                        } else {
+                            break; 
+                        }
+                    }
+                }
+            }
             AgrgMsg::CardsTab => self.tab = Tab::Cards,
             AgrgMsg::CardEdited(chunk_index, is_uid, value) => {
                 let base_address = 0x0010 + chunk_index * 16;
@@ -404,7 +423,7 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
                         .width(200),
                     text_input(&chunk.1, &chunk.1)
                         .on_input(move |v| {
-                            let cleaned = sanitize_hex_input(&v, 12);
+                            let cleaned = sanitize_pin(&v, 6);
                             AgrgMsg::CardEdited(index, false, cleaned)
                         })
                         .width(120),
@@ -434,10 +453,25 @@ fn sanitize_hex_input(input: &str, max_length: usize) -> String {
     cleaned.chars().take(max_length).collect()
 }
 
+fn sanitize_pin(input: &str, max_length: usize) -> String {
+    let cleaned: String = input.chars()
+        .filter(|c| c.is_ascii_digit())
+        .collect();
+
+    cleaned.chars().take(max_length).collect()
+}
+
 fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
         [] => Text::new("No Data loaded").height(Length::Fill).into(),
         _ => {    // row!["WIP"].into()
+
+            let admin_passwd: String = data[0x000A..0x0010].iter()
+                .map(|&b| {
+                    (b'0' + b) as char
+                })
+                .collect();
+
             let mut row = Row::new();
             let headers = ["Working mode", "Pinpad mode", "Card reader mode", "Access mode"];
 
@@ -465,7 +499,13 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'stat
                     button("Import").on_press(AgrgMsg::ImportSettings),
                     button("Export").on_press(AgrgMsg::ExportSettings)
                 ].spacing(20),
-                row
+                row,
+                text_input(&admin_passwd, &admin_passwd)
+                        .on_input(move |v| {
+                            let cleaned = sanitize_pin(&v, 6);
+                            AgrgMsg::AdminPasswdEdited(cleaned)
+                        })
+                        .width(120),
             ].spacing(20).height(Length::Fill).into()
         }
     }
