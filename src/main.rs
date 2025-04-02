@@ -305,10 +305,10 @@ impl Agrg {
 // tab ui functions
 
 fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
-    match data.as_slice() {
-        [] => "No journal loaded".into(),
+    match data.len() {
+        0..0x1000 => "No journal loaded".into(),
         _ => {    
-            let journal_entries: Vec<(String, String)> = data[0x1000..=0x7fff]
+            let journal_entries: Vec<(String, String)> = data[0x1000..data.len()]
                 .chunks(16)
                 .map(|chunk| {
                     utils::journal::journal_entry_to_string(utils::journal::parse_journal_entry(chunk.to_vec()).expect("asdasd"))

@@ -43,7 +43,7 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
     }
 
     // bytes to string
-    let bytestring: String = entry.data.iter().map(|b| b.to_string()).collect();
+    let bytestring: String = entry.data.iter().map(|b| format!("{:2X}", b)).collect();
 
    // info construction
     let info = match entry.event_type.as_str() {
