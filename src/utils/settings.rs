@@ -1,22 +1,28 @@
 use chrono::Local;
+use rfd::FileDialog;
 
 
-pub fn export_bin(cards: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn export_bin(settings: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+    
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
-    // let mut writer = csv::Writer::from_path()?;
+    
+    let file_path = FileDialog::new()
+        .set_title("Save File")
+        .set_file_name(format!("cards_{}.agrg", timestamp))
+        .save_file();
 
-    // for (i, card_bytes) in cards.iter().enumerate() {
-        // let card = parse(*card_bytes)?;
-        // let address_num = u16::from_be_bytes([addr[0], addr[1]]);
+    if let Some(path) = file_path {
+        std::fs::write(path, settings)?;
+    }
 
-    std::fs::write(format!("settings_{}.agrg", timestamp), cards)?;
     Ok(())
+
 }
 
 pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
     let file_path = rfd::FileDialog::new()
         .set_title("Import File")
-        .save_file();
+        .pick_file();
     
     std::fs::read(file_path.expect("Invalid filepath"))
     

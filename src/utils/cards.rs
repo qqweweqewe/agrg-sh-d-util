@@ -110,8 +110,7 @@ pub fn trim_empty(data: Vec<u8>) -> Vec<u8> {
 
 pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
     let file_path = FileDialog::new()
-        .set_title("Import File")
-        .save_file();
+        .set_title("Import File").pick_file();
 
     fs::read(file_path.expect("Invalid filepath"))
 
