@@ -104,9 +104,13 @@ pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>>
 
 pub fn export_journal_csv(entries: Vec<JournalEntry>) -> Result<(), Box<dyn Error>> {
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
-    let filename = format!("journal_{}.csv", timestamp);
     
-    let mut writer = csv::Writer::from_path(filename)?;
+    let file_path = rfd::FileDialog::new()
+        .set_title("Save File")
+        .set_file_name(format!("journal_{}.csv", timestamp))
+        .save_file();
+
+    let mut writer = csv::Writer::from_path(file_path.expect("valid filepath??"))?;
 
     for entry in entries {
         writer.serialize(entry)?;

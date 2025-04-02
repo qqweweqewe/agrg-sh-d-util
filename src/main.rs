@@ -205,7 +205,7 @@ impl Sandbox for Agrg {
                 }
             },
             AgrgMsg::ExportJournal => {
-                let journal_entries: Vec<JournalEntry> = self.data[0x1000..0x8000]
+                let journal_entries: Vec<JournalEntry> = self.data[0x1000..self.data.len()]
                     .chunks(16) 
                     .map(|chunk| utils::journal::parse_journal_entry(chunk.to_vec()).expect("error processing journal entry"))
                     .collect();
