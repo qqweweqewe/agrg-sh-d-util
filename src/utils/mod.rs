@@ -1,7 +1,6 @@
 pub mod cards;
 pub mod journal;
 pub mod settings;
-pub mod mock;
 
 use std::error::Error;
 type Пенис = dyn Error;
@@ -69,13 +68,6 @@ fn atomic_serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пени�
     }
 }
 
-fn serial_read(addr: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut tx = vec![0x10, 0x10];
-    tx.splice(1..1, addr);
-
-    atomic_serial_exchange(tx)
-}
-
 fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<(), Box<dyn Error>> {
     let mut tx = vec![0x11, 0x10];
     tx.splice(1..1, addr);
@@ -87,11 +79,6 @@ fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<(), Box<dyn Error>> 
 }
 
 // datetime related stuffs
-
-pub fn bytes_to_datetime(raw: Vec<u8>) -> Result<String, Box<dyn Error>> {  
-    Ok(format!("{:02X?}:{:02X?}:{:02X?} {:02X?}.{:02X?}.20{:02X?}", 
-        raw[2], raw[1], raw[0], raw[3], raw[5], raw[6]))
-}
 
 pub fn datetime_to_bytes(datetime: String) -> Result<Vec<u8>, Box<dyn Error>> {
     // split into time and date parts

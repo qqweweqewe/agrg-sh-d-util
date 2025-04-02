@@ -162,7 +162,7 @@ impl Sandbox for Agrg {
                     Ok(res) => res,
                     Err(_) => { 
                         println!("Import failed. Try again");
-                        Vec::new()
+                        vec![0; 16]
                     }
                 };
 
@@ -455,7 +455,15 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'stat
 
         row = row.push(column![headers[index], pick_list]);
     }
-    row.into()
+
+
+    column![
+        row![
+            button("Import").on_press(AgrgMsg::ImportSettings),
+            button("Export").on_press(AgrgMsg::ExportSettings)
+        ].spacing(20),
+        row
+    ].spacing(20).into()
 }
 
 
