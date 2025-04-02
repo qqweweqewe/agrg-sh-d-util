@@ -391,7 +391,7 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
 
             for (index, chunk) in chunks.iter().enumerate() {
                 let address = 0x0010 + index * 16;
-                let address_text = format!("{:04X}", address);
+                let address_text = format!("{}", address);
 
                 let card_row = row![
                     Text::new(address_text).width(60),
