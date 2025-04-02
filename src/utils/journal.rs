@@ -9,9 +9,9 @@ pub struct JournalEntry {
     #[serde(rename = "Event Type")]
     event_type: String,
     #[serde(rename = "User ID")]
-    user_id: String,
+    user_id: u8,
     #[serde(rename = "Data")]
-    data: String,
+    data: Vec<u8>,
 }
 
 const EVENT_TYPES: [&str; 11] = [
@@ -33,8 +33,9 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
     let empty_entry = JournalEntry { 
         timestamp: String::from("20FF-FF-FF FF:FF:FF"), 
         event_type: String::from("Unknown"), 
-        user_id: String::from("255"), 
-        data: String::from("ffffffffffffff") 
+        user_id: 0xFF, 
+        // data: String::from("ffffffffffffff")
+        data: vec![0xFF; 7] 
     };
     
     if entry == empty_entry {
@@ -45,8 +46,8 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
    // info construction
     let info = match entry.event_type.as_str() {
         "Registered User" => { format!("{}", entry.user_id) },
-        "Unknown UID" => { format!("{}{}", entry.user_id, entry.data) },
-        "Unknown PIN" => { format!("{}{}", entry.user_id, entry.data) },
+        "Unknown UID" => { format!("{:X}{:X?}", entry.user_id, entry.data) },
+        "Unknown PIN" => { format!("{:01x}{:01x?}", entry.user_id, &entry.data[..10]) },
 
         _ => String::new(),
     };
@@ -56,6 +57,7 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
 
    Some((entry.timestamp, info))
 }
+
 
 pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>> {
     if raw.len() != 16 {
@@ -82,10 +84,10 @@ pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>>
         .to_string();
 
     // parse user ID
-    let user_id = format!("{:02X}", raw[8]); 
+    let user_id = raw[8]; 
 
     // parse data
-    let data = hex::encode(&raw[9..16]);
+    let data = raw[9..16].to_vec();
 
 
     let res = JournalEntry {
