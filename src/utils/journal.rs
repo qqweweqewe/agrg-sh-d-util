@@ -112,9 +112,7 @@ pub fn export_journal_csv(entries: Vec<JournalEntry>) -> Result<(), Box<dyn Erro
 
     let mut writer = csv::Writer::from_path(file_path.expect("valid filepath??"))?;
 
-    for entry in entries {
-        writer.serialize(entry)?;
-    }
+    writer.serialize(entries)?;
 
     writer.flush()?;
     Ok(())

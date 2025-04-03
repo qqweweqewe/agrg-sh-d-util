@@ -205,14 +205,11 @@ impl Sandbox for Agrg {
                 }
             },
             AgrgMsg::ExportJournal => {
-                println!("{:?}", self.data[0x1000..self.data.len()].to_vec());
                 let journal_entries: Vec<JournalEntry> = self.data[0x1000..self.data.len()]
                     .chunks(16) 
                     .map(|chunk| utils::journal::parse_journal_entry(chunk.to_vec()).expect("error processing journal entry"))
                     .collect();
 
-                println!("{:?}", journal_entries);
-                
                 _ = export_journal_csv(journal_entries);
             },
             AgrgMsg::ExportCards => {
