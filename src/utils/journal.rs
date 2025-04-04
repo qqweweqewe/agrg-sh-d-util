@@ -75,7 +75,7 @@ pub fn serializer(entry_vec: Vec<Option<(String, String)>>) -> Result<(), Box<dy
     for entry in entry_vec {
         match entry {
             Some(tuple) => {
-                let data = format!("{},{}", tuple.0, tuple.1); 
+                let data = format!("{},{}\n", tuple.0, tuple.1); 
                 file.write(data.as_bytes())?;
             },
             None => {}
