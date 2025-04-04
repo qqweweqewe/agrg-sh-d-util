@@ -69,7 +69,7 @@ fn atomic_serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пени�
 }
 
 fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<(), Box<dyn Error>> {
-    let mut tx = vec![0x11, 0x10];
+    let mut tx = vec![0x02, 0x10];
     tx.splice(1..1, addr);
     tx.append(&mut data);
 
@@ -113,13 +113,13 @@ pub fn datetime_to_bytes(datetime: String) -> Result<Vec<u8>, Box<dyn Error>> {
 
 pub fn get_datetime() -> Result<Vec<u8>, Box<dyn Error>> {
     // some internal code, reference protocol documentation for details
-    atomic_serial_exchange(vec![0x00, 0x00, 0x00, 0x00])
+    atomic_serial_exchange(vec![0x01, 0x00, 0x00, 0x00])
     
 }
 
 pub fn set_datetime(datetime: String) -> Result<Vec<u8>, Box<dyn Error>>{
     //concat bytes into a single string
-    let mut tx = vec![0x01, 0x00, 0x00, 0x07];
+    let mut tx = vec![0x00, 0x00, 0x00, 0x07];
     let mut datetime_bytes = datetime_to_bytes(datetime)?;
     
     tx.append(&mut datetime_bytes);
@@ -144,7 +144,7 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
 
     for base_addr in (0x0000..=0x7FFF).step_by(64) {
         let addr_bytes = (base_addr as u16).to_be_bytes();
-        let command = vec![0x10, addr_bytes[0], addr_bytes[1], 0x40];
+        let command = vec![0x03, addr_bytes[0], addr_bytes[1], 0x40];
 
         let mut rx_part = atomic_serial_exchange(command)?;
         println!("Read 64 bytes from {:04X}", base_addr);
@@ -170,15 +170,21 @@ pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// TODO: implement that one
-pub fn text_info() -> String {
-    let bytes = match atomic_serial_exchange(vec![0x20, 0x00, 0x00, 0xFF]) {
-        Ok(res) => cards::trim_empty(res),
-        Err(_) => vec![]
-    };
-
-    match String::from_utf8(bytes) {
-        Ok(res ) => res,
-        _ => String::new()
+// no prog mode here
+pub fn get_text() -> Option<String> {
+    match atomic_serial_exchange(vec![0x11, 0x00, 0x00, 0xFF]) {
+        Ok(res) => match res.as_slice() {
+            [] => { return None },
+            _ => Some(String::from_utf8(
+                cards::trim_empty(res)))
+        }
+        Err(_) => { None }
     }
 }
+
+pub fn set_text(input: Vec<u8>) {}
+
+pub fn agrg_text_info() {}
+
+// no prog mode here
+pub fn chipset_id() {}

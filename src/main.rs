@@ -47,6 +47,10 @@ struct Agrg {
     splash: String,
     time: String,
     settings_map: Vec<Vec<String>>,
+    
+    agrg: Option<String>,
+    chipset_id: Option<String>,
+    custom_desc: Option<String>
 }
 
 impl Sandbox for Agrg {
@@ -54,6 +58,10 @@ impl Sandbox for Agrg {
 
     fn new() -> Self {
         Self {
+            agrg: None,
+            chipset_id: None,
+            custom_desc: None,
+
             tab: Tab::Journal,
             ports: match utils::get_available_ports() {
                 None => vec![String::from("No ports found")],
@@ -195,7 +203,7 @@ impl Sandbox for Agrg {
             AgrgMsg::SerialChoice(s) => { 
                 self.port = Some(s); 
                 utils::set_port(self.port.clone().expect("no available ports")); 
-                self.splash = utils::text_info()
+                self.splash = utils::get_text()
             },
             AgrgMsg::RefreshPorts => {
                 self.ports = match utils::get_available_ports() {

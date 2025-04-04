@@ -1,6 +1,6 @@
 
 use chrono::Local;
-use std::{error::Error, io::Write, path::PathBuf, str::FromStr};
+use std::{error::Error, io::Write};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct JournalEntry {
@@ -41,7 +41,7 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
     // bytes to string
     let bytestring: String = entry.data.iter().map(|b| format!("{:2X}", b)).collect();
 
-   // info construction
+    // info construction
     let info = match entry.event_type.as_str() {
         "Registered User" => { format!("{}", entry.user_id) },
         "Unknown UID" => { format!("{:X}{}", entry.user_id, &bytestring[..bytestring.len()-2]) },
