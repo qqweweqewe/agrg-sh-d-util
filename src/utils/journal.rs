@@ -1,16 +1,12 @@
-use serde::{Serialize, Deserialize};
+
 use chrono::Local;
 use std::{error::Error, io::Write};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct JournalEntry {
-    #[serde(rename = "Timestamp")]
     timestamp: String,
-    #[serde(rename = "Event Type")]
     event_type: String,
-    #[serde(rename = "User ID")]
     user_id: u8,
-    #[serde(rename = "Data")]
     data: Vec<u8>,
 }
 
