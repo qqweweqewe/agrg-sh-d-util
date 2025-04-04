@@ -13,6 +13,7 @@ pub struct Card {
 
 
 pub fn export_bin(cards: Vec<u8>) -> Result<(), Box<dyn Error>> {
+
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
     
     let file_path = FileDialog::new()
@@ -112,6 +113,12 @@ pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
     let file_path = FileDialog::new()
         .set_title("Import File").pick_file();
 
-    fs::read(file_path.expect("Invalid filepath"))
+    if let Some(path) = file_path {
+        fs::read(path)
+    }
+    else {
+        Ok(Vec::new())
+    }
+
 
 }

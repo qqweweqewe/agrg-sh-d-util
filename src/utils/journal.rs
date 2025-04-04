@@ -70,25 +70,25 @@ pub fn serializer(entry_vec: Vec<Option<(String, String)>>) -> Result<(), Box<dy
 
     print!("{:?}", file_path);
 
-    let mut file = std::fs::File::create(match file_path {
-        Some(path) => path,
-        None => PathBuf::from_str(&filename)?
-    })
-        .expect("Failed to create file");
-    
-    file.write(b"Timestamp, Data\n")?;
+    match file_path {
+        Some(path) => {
+            let mut file = std::fs::File::create(path)
+                .expect("Failed to create file");
 
-    for entry in entry_vec {
-        match entry {
-            Some(tuple) => {
-                let data = format!("{},{}\n", tuple.0, tuple.1); 
-                file.write(data.as_bytes())?;
-            },
-            None => {}
-        }
-    }
+            file.write(b"Timestamp, Data\n")?;
 
-
+            for entry in entry_vec {
+                match entry {
+                    Some(tuple) => {
+                        let data = format!("{},{}\n", tuple.0, tuple.1); 
+                        file.write(data.as_bytes())?;
+                    },
+                    None => {}
+                }
+            };
+        },
+        None => {}
+    };
     Ok(())
 } 
 

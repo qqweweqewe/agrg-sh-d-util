@@ -24,6 +24,12 @@ pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
         .set_title("Import File")
         .pick_file();
     
-    std::fs::read(file_path.expect("Invalid filepath"))
+    if let Some(path) = file_path {
+        std::fs::read(path)
+    }
+    else {
+        Ok(Vec::new())
+    }
+
     
 }
