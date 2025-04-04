@@ -5,7 +5,6 @@ use iced::{
     alignment::Horizontal, 
     widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Row, Space, Text}, Alignment, Length, Sandbox, Settings
 };
-use utils::journal::{export_journal_csv, JournalEntry};
 use chrono::Local;
 
 fn main() -> iced::Result {
@@ -205,12 +204,15 @@ impl Sandbox for Agrg {
                 }
             },
             AgrgMsg::ExportJournal => {
-                let journal_entries: Vec<JournalEntry> = self.data[0x1000..self.data.len()]
+                let journal_entries: Vec<Option<(String, String)>> = self.data[0x1000..self.data.len()]
                     .chunks(16) 
-                    .map(|chunk| utils::journal::parse_journal_entry(chunk.to_vec()).expect("error processing journal entry"))
+                    .map(|chunk| utils::journal::journal_entry_to_string(
+                        utils::journal::parse_journal_entry(chunk.to_vec()).expect("error processing journal entry")
+                        )
+                    )
                     .collect();
 
-                _ = export_journal_csv(journal_entries);
+                _ = utils::journal::serializer(journal_entries);
             },
             AgrgMsg::ExportCards => {
                 _ = utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec());

@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use chrono::Local;
-use std::error::Error;
+use std::{error::Error, io::Write};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct JournalEntry {
@@ -61,6 +61,35 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
 }
 
 
+pub fn serializer(entry_vec: Vec<Option<(String, String)>>) -> Result<(), Box<dyn Error>> {
+
+    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
+    
+    let file_path = rfd::FileDialog::new()
+        .set_title("Save File")
+        .set_file_name(format!("journal_{}.csv", timestamp))
+        .save_file();
+
+
+    let mut file = std::fs::File::create(file_path.expect("what"))
+        .expect("Failed to create file");
+    
+    file.write(b"Timestamp, Data\n")?;
+
+    for entry in entry_vec {
+        match entry {
+            Some(tuple) => {
+                let data = format!("{},{}", tuple.0, tuple.1); 
+                file.write(data.as_bytes())?;
+            },
+            None => {}
+        }
+    }
+
+
+    Ok(())
+} 
+
 pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>> {
     if raw.len() != 16 {
         return Err("Invalid journal entry length".into());
@@ -99,21 +128,4 @@ pub fn parse_journal_entry(raw: Vec<u8>) -> Result<JournalEntry, Box<dyn Error>>
         data,
     };
     Ok(res)
-}
-
-
-pub fn export_journal_csv(entries: Vec<JournalEntry>) -> Result<(), Box<dyn Error>> {
-    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
-    
-    let file_path = rfd::FileDialog::new()
-        .set_title("Save File")
-        .set_file_name(format!("journal_{}.csv", timestamp))
-        .save_file();
-
-    let mut writer = csv::Writer::from_path(file_path.expect("valid filepath??"))?;
-
-    writer.serialize(entries)?;
-
-    writer.flush()?;
-    Ok(())
 }
