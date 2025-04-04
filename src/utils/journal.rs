@@ -1,6 +1,6 @@
 
 use chrono::Local;
-use std::{error::Error, io::Write};
+use std::{error::Error, io::Write, path::PathBuf, str::FromStr};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct JournalEntry {
@@ -61,13 +61,19 @@ pub fn serializer(entry_vec: Vec<Option<(String, String)>>) -> Result<(), Box<dy
 
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
     
+    let filename = format!("journal_{}.csv", timestamp);
+
     let file_path = rfd::FileDialog::new()
         .set_title("Save File")
-        .set_file_name(format!("journal_{}.csv", timestamp))
+        .set_file_name(&filename)
         .save_file();
 
+    print!("{:?}", file_path);
 
-    let mut file = std::fs::File::create(file_path.expect("what"))
+    let mut file = std::fs::File::create(match file_path {
+        Some(path) => path,
+        None => PathBuf::from_str(&filename)?
+    })
         .expect("Failed to create file");
     
     file.write(b"Timestamp, Data\n")?;
