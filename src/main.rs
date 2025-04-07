@@ -3,7 +3,7 @@ mod styles;
 
 use iced::{
     alignment::Horizontal, 
-    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Row, Space, Text}, Alignment, Length, Sandbox, Settings
+    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text}, Alignment, Length, Sandbox, Settings
 };
 use chrono::Local;
 
@@ -44,7 +44,6 @@ struct Agrg {
     ports: Vec<String>,
     port: Option<String>,
     data: Vec<u8>,
-    splash: String,
     time: String,
     settings_map: Vec<Vec<String>>,
     
@@ -69,7 +68,6 @@ impl Sandbox for Agrg {
             },
             port: None,
             data: Vec::new(),
-            splash: String::new(),
             //time: String::new()
             time: Local::now().format("%H:%M:%S %d.%m.%Y").to_string(),
             settings_map: vec![
@@ -180,7 +178,7 @@ impl Sandbox for Agrg {
             AgrgMsg::JournalTab => self.tab = Tab::Journal,
             AgrgMsg::SettingsTab => self.tab = Tab::Settings,
             AgrgMsg::ExportSettings => {
-                _ = utils::settings::export_bin(self.data[0x0000..=0x000f].to_vec());
+                _ = utils::settings::export_bin(self.data[0x0000..=0x000f].to_vec(), self.chipset_id.clone().unwrap());
             },
             AgrgMsg::ImportSettings => {
                 let new_data = match utils::settings::import_bin() {
@@ -203,7 +201,9 @@ impl Sandbox for Agrg {
             AgrgMsg::SerialChoice(s) => { 
                 self.port = Some(s); 
                 utils::set_port(self.port.clone().expect("no available ports")); 
-                self.splash = utils::get_text()
+                self.agrg = utils::agrg_text_info();
+                self.chipset_id = utils::chipset_id();
+                self.custom_desc = utils::get_text();
             },
             AgrgMsg::RefreshPorts => {
                 self.ports = match utils::get_available_ports() {
@@ -223,7 +223,7 @@ impl Sandbox for Agrg {
                 _ = utils::journal::serializer(journal_entries);
             },
             AgrgMsg::ExportCards => {
-                _ = utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec());
+                _ = utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec(), self.chipset_id.clone().unwrap());
             },
             AgrgMsg::MemDump => {
                 // self.time = match utils::get_datetime() {
@@ -315,7 +315,34 @@ impl Sandbox for Agrg {
                 }
             },
             Space::new(0, 20),
-            Text::new(utils::text_info()).height(100)
+            Container::new(
+                column![
+
+                    // custom description
+                    Text::new(
+                        match &self.custom_desc {
+                            Some(thing) => thing.clone(),
+                            None => String::new()
+                        }
+                    ),
+                    
+                    // agrg info
+                    Text::new(
+                        match &self.agrg {
+                            Some(thing) => thing.clone(),
+                            None => String::new()
+                        }
+                    ),
+
+                    // chipset id
+                    Text::new(
+                        match &self.chipset_id {
+                            Some(thing) => format!("chipset_serial:{}", thing),
+                            None => String::new()
+                        }
+                    )
+                ]
+            ).height(100)
         ].width(Length::Fill)
         .into()
     }   

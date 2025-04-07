@@ -175,8 +175,12 @@ pub fn get_text() -> Option<String> {
     match atomic_serial_exchange(vec![0x11, 0x00, 0x00, 0xFF]) {
         Ok(res) => match res.as_slice() {
             [] => { return None },
-            _ => Some(String::from_utf8(
-                cards::trim_empty(res)))
+            _ => Some(
+                match String::from_utf8(cards::trim_empty(res)) {
+                    Ok(thing) => thing,
+                    Err(_) => String::new()
+                }
+            )
         }
         Err(_) => { None }
     }
@@ -184,7 +188,31 @@ pub fn get_text() -> Option<String> {
 
 pub fn set_text(input: Vec<u8>) {}
 
-pub fn agrg_text_info() {}
-
 // no prog mode here
-pub fn chipset_id() {}
+pub fn agrg_text_info() -> Option<String> {
+    match atomic_serial_exchange(vec![0x11, 0x00, 0x00, 0xFF]) {
+        Ok(res) => match res.as_slice() {
+            [] => { return None },
+            _ => Some(
+                match String::from_utf8(cards::trim_empty(res)) {
+                    Ok(thing) => thing,
+                    Err(_) => String::new()
+                }
+            )
+        }
+        Err(_) => { None }
+    }
+}
+
+// and no prog mode here
+pub fn chipset_id() -> Option<String> {
+    match atomic_serial_exchange(vec![0x83, 0x02, 0x00, 0x10]) {
+        Ok(res) => match res.as_slice() {
+            [] => { return None },
+            _ => Some(
+                hex::encode(cards::trim_empty(res))
+            )
+        }
+        Err(_) => { None }
+    }
+}

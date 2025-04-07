@@ -2,13 +2,13 @@ use chrono::Local;
 use rfd::FileDialog;
 
 
-pub fn export_bin(settings: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn export_bin(settings: Vec<u8>, uid: String) -> Result<(), Box<dyn std::error::Error>> {
     
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
     
     let file_path = FileDialog::new()
         .set_title("Save File")
-        .set_file_name(format!("cards_{}.agrg", timestamp))
+        .set_file_name(format!("settings_{}_{}.agrg", uid, timestamp))
         .save_file();
 
     if let Some(path) = file_path {
