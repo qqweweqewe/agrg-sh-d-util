@@ -2,8 +2,7 @@ mod utils;
 mod styles;
 
 use iced::{
-    alignment::Horizontal, 
-    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text}, Alignment, Length, Sandbox, Settings
+    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text}, Alignment, Application, Length, Settings
 };
 use chrono::Local;
 
@@ -52,55 +51,61 @@ struct Agrg {
     custom_desc: Option<String>
 }
 
-impl Sandbox for Agrg {
+impl Application for Agrg {
     type Message = AgrgMsg;
+    type Executor = iced::executor::Default;
+    type Theme = iced::Theme;
+    type Flags = ();
 
-    fn new() -> Self {
-        Self {
-            agrg: None,
-            chipset_id: None,
-            custom_desc: None,
+    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        (
+            Self {
+                agrg: None,
+                chipset_id: None,
+                custom_desc: None,
 
-            tab: Tab::Journal,
-            ports: match utils::get_available_ports() {
-                None => vec![String::from("No ports found")],
-                Some(ports) => ports
-            },
-            port: None,
-            data: Vec::new(),
-            //time: String::new()
-            time: Local::now().format("%H:%M:%S %d.%m.%Y").to_string(),
-            settings_map: vec![
-                // mode
-                vec![
-                    "Card Reader".into(),
-                    "Controller".into()
-                ],
-                
-                // pinpad mode
-                vec![
-                    "Wiegand6".into(),
-                    "Wiegand26(hex)".into(),
-                    "Wiegand26(dec)".into(),
-                    "Pinpad Off".into()
-                ],
+                tab: Tab::Journal,
+                ports: match utils::get_available_ports() {
+                    None => vec![String::from("No ports found")],
+                    Some(ports) => ports
+                },
+                port: None,
+                data: Vec::new(),
+                //time: String::new()
+                time: Local::now().format("%H:%M:%S %d.%m.%Y").to_string(),
+                settings_map: vec![
+                    // mode
+                    vec![
+                        "Card Reader".into(),
+                        "Controller".into()
+                    ],
+                    
+                    // pinpad mode
+                    vec![
+                        "Wiegand6".into(),
+                        "Wiegand26(hex)".into(),
+                        "Wiegand26(dec)".into(),
+                        "Pinpad Off".into()
+                    ],
 
-                // card reader mode
-                vec![
-                    "Wiegand26".into(),
-                    "Wiegand34".into(),
-                    "Card Reader Off".into()
-                ],
+                    // card reader mode
+                    vec![
+                        "Wiegand26".into(),
+                        "Wiegand34".into(),
+                        "Card Reader Off".into()
+                    ],
 
-                // auto access mode
-                vec![
-                    "PIN or Card".into(),
-                    "PIN".into(),
-                    "Card".into(),
-                    "PIN and Card".into()
+                    // auto access mode
+                    vec![
+                        "PIN or Card".into(),
+                        "PIN".into(),
+                        "Card".into(),
+                        "PIN and Card".into()
+                    ]
                 ]
-            ]
-        }
+            },
+            iced::Command::none()
+        )
     }
 
     fn title(&self) -> String {
@@ -111,7 +116,7 @@ impl Sandbox for Agrg {
         iced::Theme::CatppuccinMocha
     }
 
-    fn update(&mut self, message: Self::Message) {
+    fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             AgrgMsg::AdminPasswdEdited(str) => {
                 
@@ -259,6 +264,7 @@ impl Sandbox for Agrg {
                 _ = utils::set_datetime(self.time.clone())
             }
         }
+        iced::Command::none()
     } 
 
     fn view(&self) -> iced::Element<Self::Message> {
