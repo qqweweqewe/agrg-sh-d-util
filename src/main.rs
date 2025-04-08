@@ -129,7 +129,7 @@ impl Application for Agrg {
                 let current = self.keepalive.load(Ordering::Relaxed);
                 self.keepalive.store(!current, Ordering::Relaxed);
                 
-                if !current {
+                if !current { 
                     let keepalive = self.keepalive.clone();
                     std::thread::spawn(move || {
                         utils::keepalive_loop(keepalive);

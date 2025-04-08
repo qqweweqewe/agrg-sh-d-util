@@ -220,7 +220,7 @@ pub fn chipset_id() -> Option<String> {
 }
 
 pub fn keepalive_loop(finish: Arc<AtomicBool>) {
-    while !finish.load(Ordering::Relaxed) {
+    while finish.load(Ordering::Relaxed) {
         println!("{:?}", atomic_serial_exchange(vec![0x01, 0x00, 0x00, 0x00]));
         println!("sent ping");
         std::thread::sleep(std::time::Duration::from_secs(15));
