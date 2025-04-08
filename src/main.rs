@@ -2,7 +2,7 @@ mod utils;
 mod styles;
 
 use iced::{
-    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text}, Alignment, Application, Length, Settings
+    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
 };
 use chrono::Local;
 
@@ -20,6 +20,7 @@ enum Tab {
 
 #[derive(Debug, Clone)]
 enum AgrgMsg {
+    ToggleKeepAlive,
     SettingsUpdate(usize, String),
     AdminPasswdEdited(String),
     SettingsTab,
@@ -39,6 +40,7 @@ enum AgrgMsg {
 }
 
 struct Agrg {
+    keepalive: bool,
     tab: Tab,
     ports: Vec<String>,
     port: Option<String>,
@@ -60,6 +62,7 @@ impl Application for Agrg {
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         (
             Self {
+                keepalive: false,
                 agrg: None,
                 chipset_id: None,
                 custom_desc: None,
@@ -118,6 +121,10 @@ impl Application for Agrg {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
+            AgrgMsg::ToggleKeepAlive => {
+                self.keepalive = !self.keepalive;
+                println!("{}", &self.keepalive);
+            },
             AgrgMsg::AdminPasswdEdited(str) => {
                 
                 let replacements: Vec<u8> = str.chars()
@@ -183,7 +190,7 @@ impl Application for Agrg {
             AgrgMsg::JournalTab => self.tab = Tab::Journal,
             AgrgMsg::SettingsTab => self.tab = Tab::Settings,
             AgrgMsg::ExportSettings => {
-                _ = utils::settings::export_bin(self.data[0x0000..=0x000f].to_vec(), self.chipset_id.clone().unwrap());
+                _ = utils::settings::export_bin(self.data[0x0000..=0x000f].to_vec(), self.custom_desc.clone().unwrap());
             },
             AgrgMsg::ImportSettings => {
                 let new_data = match utils::settings::import_bin() {
@@ -228,7 +235,7 @@ impl Application for Agrg {
                 _ = utils::journal::serializer(journal_entries);
             },
             AgrgMsg::ExportCards => {
-                _ = utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec(), self.chipset_id.clone().unwrap());
+                _ = utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec(), self.custom_desc.clone().unwrap());
             },
             AgrgMsg::MemDump => {
                 // self.time = match utils::get_datetime() {
@@ -275,11 +282,15 @@ impl Application for Agrg {
                     self.port.clone(),
                     AgrgMsg::SerialChoice
                 ).placeholder("Select a port").width(200),
-                button("Refresh").on_press(AgrgMsg::RefreshPorts)
+                button("Refresh").on_press(AgrgMsg::RefreshPorts),
             ].spacing(20),
 
             Space::new(0, 20),
             
+            Toggler::new(Some("KeepAlive".into()), false, |_| { AgrgMsg::ToggleKeepAlive }),
+            
+            Space::new(0, 20),
+
             row![
                 button("Load data").on_press(AgrgMsg::MemDump),
 
@@ -343,7 +354,10 @@ impl Application for Agrg {
                     // chipset id
                     Text::new(
                         match &self.chipset_id {
-                            Some(thing) => format!("chipset_serial:{}", thing),
+                            Some(thing) => {
+                                println!("{}", thing);
+                                format!("chipset_serial:{}", "fucked up for now, printing in the terminal.")
+                            },
                             None => String::new()
                         }
                     )
