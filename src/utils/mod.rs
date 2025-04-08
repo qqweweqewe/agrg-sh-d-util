@@ -210,7 +210,7 @@ pub fn chipset_id() -> Option<String> {
         Ok(res) => match res.as_slice() {
             [] => { return None },
             _ => Some(
-                hex::encode(cards::trim_empty(res))
+                hex::encode(res)
             )
         }
         Err(_) => { None }

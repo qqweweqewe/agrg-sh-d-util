@@ -287,7 +287,7 @@ impl Application for Agrg {
 
             Space::new(0, 20),
             
-            Toggler::new(Some("KeepAlive".into()), false, |_| { AgrgMsg::ToggleKeepAlive }),
+            Toggler::new(Some("KeepAlive".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
             
             Space::new(0, 20),
 
@@ -355,8 +355,8 @@ impl Application for Agrg {
                     Text::new(
                         match &self.chipset_id {
                             Some(thing) => {
-                                println!("{}", thing);
-                                format!("chipset_serial:{}", "fucked up for now, printing in the terminal.")
+                                println!("{}", &thing);
+                                format!("chipset_serial:{}", thing)
                             },
                             None => String::new()
                         }
