@@ -5,6 +5,8 @@ pub mod settings;
 use std::error::Error;
 type Пенис = dyn Error;
 use std::io::{self, Read, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 pub fn set_port(port: String) {
@@ -214,5 +216,12 @@ pub fn chipset_id() -> Option<String> {
             )
         }
         Err(_) => { None }
+    }
+}
+
+pub fn keepalive_loop(finish: Arc<AtomicBool>) {
+    while !finish.load(Ordering::Relaxed) {
+        println!("{:?}", atomic_serial_exchange(vec![0x83, 0x02, 0x00, 0x10]));
+        std::thread::sleep(std::time::Duration::from_secs(25));
     }
 }

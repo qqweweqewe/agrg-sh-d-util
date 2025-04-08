@@ -1,6 +1,10 @@
 mod utils;
 mod styles;
 
+
+
+use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
+
 use iced::{
     alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
 };
@@ -40,7 +44,7 @@ enum AgrgMsg {
 }
 
 struct Agrg {
-    keepalive: bool,
+    keepalive: Arc<AtomicBool>,
     tab: Tab,
     ports: Vec<String>,
     port: Option<String>,
@@ -62,7 +66,7 @@ impl Application for Agrg {
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         (
             Self {
-                keepalive: false,
+                keepalive: Arc::new(AtomicBool::new(false)),
                 agrg: None,
                 chipset_id: None,
                 custom_desc: None,
@@ -122,8 +126,15 @@ impl Application for Agrg {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             AgrgMsg::ToggleKeepAlive => {
-                self.keepalive = !self.keepalive;
-                println!("{}", &self.keepalive);
+                let current = self.keepalive.load(Ordering::Relaxed);
+                self.keepalive.store(!current, Ordering::Relaxed);
+                
+                if !current {
+                    let keepalive = self.keepalive.clone();
+                    std::thread::spawn(move || {
+                        utils::keepalive_loop(keepalive);
+                    });
+                }
             },
             AgrgMsg::AdminPasswdEdited(str) => {
                 
@@ -242,6 +253,7 @@ impl Application for Agrg {
                 //     Ok(res) => res,
                 //     Err(_) => "Error".to_string()
                 // };
+                self.data = vec![];
 
                 self.data = match utils::mem_dump() {
                     Ok(data) => data,
@@ -287,7 +299,7 @@ impl Application for Agrg {
 
             Space::new(0, 20),
             
-            Toggler::new(Some("KeepAlive".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
+            Toggler::new(Some("KeepAlive".into()), self.keepalive.load(Ordering::Relaxed), |_| { AgrgMsg::ToggleKeepAlive }),
             
             Space::new(0, 20),
 
