@@ -7,16 +7,12 @@ type Пенис = dyn Error;
 
 use std::{io::{self, Read, Write},
     time::Duration,
-    sync::{atomic::{AtomicBool, Ordering},
+    sync::{
         Arc, Mutex
     }
 };
 
 use lazy_static::lazy_static;
-
-lazy_static! {
-    static ref SERIAL_MUTEX: Mutex<()> = Mutex::new(());
-}
 
 lazy_static! {
     static ref PORT: Arc<Mutex<String>> = Arc::new(Mutex::new(String::new()));
@@ -45,7 +41,6 @@ fn atomic_serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пени�
 
     // open
 
-    let _guard = SERIAL_MUTEX.lock().unwrap(); // Serial access mutex
     let port_name = PORT.lock().unwrap().clone();
 
 
@@ -132,14 +127,12 @@ pub fn datetime_to_bytes(datetime: String) -> Result<Vec<u8>, Box<dyn Error>> {
 }
 
 pub fn get_datetime() -> Result<Vec<u8>, Box<dyn Error>> {
-    let _guard = SERIAL_MUTEX.lock().unwrap();
     // some internal code, reference protocol documentation for details
     atomic_serial_exchange(vec![0x01, 0x00, 0x00, 0x00])
     
 }
 
 pub fn set_datetime(datetime: String) -> Result<Vec<u8>, Box<dyn Error>>{
-    let _guard = SERIAL_MUTEX.lock().unwrap();
     //concat bytes into a single string
     let mut tx = vec![0x00, 0x00, 0x00, 0x07];
     let mut datetime_bytes = datetime_to_bytes(datetime)?;
@@ -162,7 +155,6 @@ pub fn get_available_ports() -> Option<Vec<String>> {
 }
 
 pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
-    let _guard = SERIAL_MUTEX.lock().unwrap();
     let mut rx_vec: Vec<u8> = vec![];
 
     for base_addr in (0x0000..=0x7FFF).step_by(64) {
@@ -181,7 +173,6 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
 }
 
 pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
-    let _guard = SERIAL_MUTEX.lock().unwrap();
 
     for base_addr in (0x0000..0x1000).step_by(16) {
         println!("uploading {:4X}", base_addr);
@@ -211,7 +202,6 @@ pub fn get_text() -> Option<String> {
 }
 
 pub fn set_text(input: Vec<u8>) {
-    let _guard = SERIAL_MUTEX.lock().unwrap();
 }
 
 // no prog mode here
@@ -243,14 +233,4 @@ pub fn chipset_id() -> Option<String> {
     }
 }
 
-pub fn keepalive_loop(finish: Arc<AtomicBool>) {
-    while finish.load(Ordering::Relaxed) {
-        let result = {
-            let _guard = SERIAL_MUTEX.lock().unwrap();
-            atomic_serial_exchange(vec![0x01, 0x00, 0x00, 0x00])
-        };
-        
-        println!("Sent ping: {:?}", result);
-        std::thread::sleep(Duration::from_secs(15)); // Sleep outside mutex
-    }
-}
+

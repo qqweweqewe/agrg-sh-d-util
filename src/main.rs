@@ -3,7 +3,7 @@ mod styles;
 
 
 
-use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
+use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
 
 use iced::{
     alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
@@ -24,6 +24,7 @@ enum Tab {
 
 #[derive(Debug, Clone)]
 enum AgrgMsg {
+    PingKeepAlive,
     ToggleKeepAlive,
     SettingsUpdate(usize, String),
     AdminPasswdEdited(String),
@@ -44,7 +45,7 @@ enum AgrgMsg {
 }
 
 struct Agrg {
-    keepalive: Arc<AtomicBool>,
+    keepalive_lock: Arc<AtomicBool>,
     tab: Tab,
     ports: Vec<String>,
     port: Option<String>,
@@ -66,7 +67,7 @@ impl Application for Agrg {
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         (
             Self {
-                keepalive: Arc::new(AtomicBool::new(false)),
+                keepalive_lock: Arc::new(AtomicBool::new(false)),
                 agrg: None,
                 chipset_id: None,
                 custom_desc: None,
@@ -125,16 +126,14 @@ impl Application for Agrg {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
-            AgrgMsg::ToggleKeepAlive => {
-                let current = self.keepalive.load(Ordering::Relaxed);
-                self.keepalive.store(!current, Ordering::Relaxed);
-                
-                if !current { 
-                    let keepalive = self.keepalive.clone();
-                    std::thread::spawn(move || {
-                        utils::keepalive_loop(keepalive);
-                    });
+            AgrgMsg::PingKeepAlive => {
+                if self.keepalive_lock.load(Ordering::Relaxed) {
+                    _ = utils::get_datetime();
                 }
+            }
+            AgrgMsg::ToggleKeepAlive => {
+                let current = self.keepalive_lock.load(Ordering::Relaxed);
+                self.keepalive_lock.store(!current, Ordering::Relaxed);
             },
             AgrgMsg::AdminPasswdEdited(str) => {
                 
@@ -253,6 +252,11 @@ impl Application for Agrg {
                 //     Ok(res) => res,
                 //     Err(_) => "Error".to_string()
                 // };
+                let current = self.keepalive_lock.load(Ordering::Relaxed);
+                if current {
+                    self.keepalive_lock.store(false, Ordering::Relaxed);
+                }
+
                 self.data = vec![];
 
                 self.data = match utils::mem_dump() {
@@ -261,10 +265,19 @@ impl Application for Agrg {
                         println!("ERR WRONG/INVALID PORT");
                         Vec::new()
                     }
-                } 
+                };
                 // self.data = utils::mock::get_data()
+
+                if current {
+                    self.keepalive_lock.store(true, Ordering::Relaxed);
+                }
             },
             AgrgMsg::MemUpload => {
+                let current = self.keepalive_lock.load(Ordering::Relaxed);
+                if current {
+                    self.keepalive_lock.store(false, Ordering::Relaxed);
+                }
+
                 match self.data.as_slice() {
                     [] => println!("ERR WRONG/INVALID PORT"),
                     _ => {
@@ -275,6 +288,10 @@ impl Application for Agrg {
                             }
                         }
                     }
+                }
+                
+                if current {
+                    self.keepalive_lock.store(true, Ordering::Relaxed);
                 }
             }, 
             AgrgMsg::TimeSync => {
@@ -299,7 +316,7 @@ impl Application for Agrg {
 
             Space::new(0, 20),
             
-            Toggler::new(Some("KeepAlive".into()), self.keepalive.load(Ordering::Relaxed), |_| { AgrgMsg::ToggleKeepAlive }),
+            Toggler::new(Some("KeepAlive".into()), self.keepalive_lock.load(Ordering::Relaxed), |_| { AgrgMsg::ToggleKeepAlive }),
             
             Space::new(0, 20),
 
@@ -377,6 +394,10 @@ impl Application for Agrg {
             ).height(100)
         ].width(Length::Fill)
         .into()
+    }
+
+    fn subscription(&self) -> iced::Subscription<Self::Message> {
+        iced::time::every(Duration::from_secs(20)).map(|_| AgrgMsg::PingKeepAlive)
     }   
 }
 
