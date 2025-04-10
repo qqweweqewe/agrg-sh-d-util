@@ -1,6 +1,7 @@
 mod utils;
-mod styles;
-
+mod core;
+mod gui;
+mod serial;
 
 
 use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
@@ -384,7 +385,7 @@ impl Application for Agrg {
                     Text::new(
                         match &self.chipset_id {
                             Some(thing) => {
-                                println!("{}", &thing);
+                                println!("{:?} {}", &self.keepalive_lock, &thing);
                                 format!("chipset_serial:{}", thing)
                             },
                             None => String::new()
