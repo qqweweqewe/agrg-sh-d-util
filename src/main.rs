@@ -304,6 +304,7 @@ impl Application for Agrg {
     } 
 
     fn view(&self) -> iced::Element<Self::Message> {
+        println!("loaded ui");
         column![
             row![
                 pick_list(
@@ -436,11 +437,9 @@ fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
             let mut left_col: Column<AgrgMsg> = Column::new()
                 .spacing(10)
                 .align_items(Alignment::Start);
-            println!("Left column");
             let mut right_col: Column<AgrgMsg> = Column::new()
                 .spacing(10)
                 .align_items(Alignment::Start);
-            println!("Right Column");
 
             // headers
             left_col = left_col.push(Text::new("Date").width(Length::Fill));

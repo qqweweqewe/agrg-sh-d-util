@@ -162,13 +162,14 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
         let command = vec![0x03, addr_bytes[0], addr_bytes[1], 0x20];
 
         let mut rx_part = atomic_serial_exchange(command)?;
-        println!("Read 32 bytes from {:04X}", base_addr);
+        println!("{:04X}: {:X?}", base_addr, &rx_part);
         // if (base_addr >= 0x1000 && rx_part == vec![0xff; 32]) || (rx_part) == vec![] {
         //    return Ok(rx_vec);
         // };
         rx_vec.append(&mut rx_part);
     }
     println!("len:{:?}", rx_vec.len());
+    println!("{:X?}", rx_vec[0]);
     Ok(rx_vec)
 }
 
