@@ -157,9 +157,9 @@ pub fn get_available_ports() -> Option<Vec<String>> {
 pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
     let mut rx_vec: Vec<u8> = vec![];
 
-    for base_addr in (0x0000..=0x7FFF).step_by(32) {
+    for base_addr in (0x0000..=0x7FFF).step_by(16) {
         let addr_bytes = (base_addr as u16).to_be_bytes();
-        let command = vec![0x03, addr_bytes[0], addr_bytes[1], 0x20];
+        let command = vec![0x03, addr_bytes[0], addr_bytes[1], 0x10];
 
         let mut rx_part = atomic_serial_exchange(command)?;
         println!("{:04X}: {:X?}", base_addr, &rx_part);
