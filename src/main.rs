@@ -139,23 +139,17 @@ impl Application for Agrg {
                 self.keepalive = !current;
             },
             AgrgMsg::AdminPasswdEdited(str) => {
-                
                 let replacements: Vec<u8> = str.chars()
                     .map(|c| c.to_digit(10).expect("invalid digit") as u8)
                     .collect();
-
-                let mut repl_iter = replacements.into_iter();
-                for byte in self.data.iter_mut() {
-                    if (0x0A..0x10).contains(byte) {
-                        // Replace with the next byte from the input string's digits
-                        if let Some(new_byte) = repl_iter.next() {
-                            *byte = new_byte;
-                        } else {
-                            break; 
-                        }
+            
+                for (i, &new_byte) in replacements.iter().enumerate() {
+                    if i < 6 { // Ensure we only write 6 digits
+                        self.data[0x0A + i] = new_byte;
                     }
                 }
             }
+            
             AgrgMsg::CardsTab => self.tab = Tab::Cards,
             AgrgMsg::CardEdited(chunk_index, is_uid, value) => {
                 let base_address = 0x0010 + chunk_index * 16;
