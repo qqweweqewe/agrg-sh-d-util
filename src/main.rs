@@ -552,14 +552,20 @@ fn sanitize_pin(input: &str, max_length: usize) -> String {
     cleaned.chars().take(max_length).collect()
 }
 
+
 fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
         [] => Text::new("No Data loaded").height(Length::Fill).into(),
-        _ => {    // row!["WIP"].into()
-
-            let admin_passwd: String = data[0x000A..0x0010].iter()
+        _ => {    
+            // Convert admin password bytes to string, ensuring we only process valid digits
+            let admin_passwd: String = data[0x000A..0x0010]
+                .iter()
                 .map(|&b| {
-                    (b'0' + b) as char
+                    if b <= 9 { // Only map valid single digits
+                        (b'0' + b) as char
+                    } else {
+                        '0' // Default to '0' for invalid values
+                    }
                 })
                 .collect();
 
@@ -568,22 +574,15 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'stat
 
             // pick list for each byte
             for (index, &byte) in data[0..4].iter().enumerate() {
-                // currently selected option
                 let selected = option_map[index][byte as usize].clone();
-
-                // closure with captured index
                 let on_select = move |new_selection: String| AgrgMsg::SettingsUpdate(index, new_selection);
-
-                // pick list widget
                 let pick_list = pick_list(
                     option_map[index].clone(),
                     Some(selected),
                     on_select
                 );
-
                 row = row.push(column![headers[index], pick_list]);
             }
-
 
             column![
                 row![
@@ -591,16 +590,84 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'stat
                     button("Export").on_press(AgrgMsg::ExportSettings)
                 ].spacing(20),
                 row,
-                text_input(&admin_passwd, &admin_passwd)
+                column![
+                    Text::new("Admin Password"),
+                    text_input(&admin_passwd, &admin_passwd)
                         .on_input(move |v| {
-                            let cleaned = sanitize_pin(&v, 6);
+                            let cleaned = sanitize_admin_passwd(&v, 6);
                             AgrgMsg::AdminPasswdEdited(cleaned)
                         })
-                        .width(120),
+                        .width(120)
+                        .padding(5)
+                ],
             ].spacing(20).height(Length::Fill).into()
         }
     }
 }
 
 
+
+// fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
+//     match data.as_slice() {
+//         [] => Text::new("No Data loaded").height(Length::Fill).into(),
+//         _ => {    // row!["WIP"].into()
+
+//             let admin_passwd: String = data[0x000A..0x0010].iter()
+//                 .map(|&b| {
+//                     (b'0' + b) as char
+//                 })
+//                 .collect();
+
+//             let mut row = Row::new();
+//             let headers = ["Working mode", "Pinpad mode", "Card reader mode", "Access mode"];
+
+//             // pick list for each byte
+//             for (index, &byte) in data[0..4].iter().enumerate() {
+//                 // currently selected option
+//                 let selected = option_map[index][byte as usize].clone();
+
+//                 // closure with captured index
+//                 let on_select = move |new_selection: String| AgrgMsg::SettingsUpdate(index, new_selection);
+
+//                 // pick list widget
+//                 let pick_list = pick_list(
+//                     option_map[index].clone(),
+//                     Some(selected),
+//                     on_select
+//                 );
+
+//                 row = row.push(column![headers[index], pick_list]);
+//             }
+
+
+//             column![
+//                 row![
+//                     button("Import").on_press(AgrgMsg::ImportSettings),
+//                     button("Export").on_press(AgrgMsg::ExportSettings)
+//                 ].spacing(20),
+//                 row,
+//                 text_input(&admin_passwd, &admin_passwd)
+//                         .on_input(move |v| {
+//                             let cleaned = sanitize_admin_passwd(&v, 6);
+//                             AgrgMsg::AdminPasswdEdited(cleaned)
+//                         })
+//                         .width(120),
+//             ].spacing(20).height(Length::Fill).into()
+//         }
+//     }
+// }
+
+
+fn sanitize_admin_passwd(input: &str, max_length: usize) -> String {
+    let cleaned: String = input.chars()
+        .filter(|c| c.is_ascii_digit())
+        .take(max_length)
+        .collect();
+
+    if cleaned.len() < max_length {
+        format!("{:0>6}", cleaned)
+    } else {
+        cleaned
+    }
+}
 
