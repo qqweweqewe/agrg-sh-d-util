@@ -127,11 +127,14 @@ impl Application for Agrg {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             AgrgMsg::PingKeepAlive => {
+                println!("pinging..");
                 if self.keepalive {
+                    println!("ping yes: {}", &self.keepalive);
                     _ = utils::get_datetime();
                 }
             }
             AgrgMsg::ToggleKeepAlive => {
+                println!("toggling keepalive: {}", &self.keepalive);
                 let current = self.keepalive;
                 self.keepalive = !current;
             },
@@ -304,7 +307,6 @@ impl Application for Agrg {
     } 
 
     fn view(&self) -> iced::Element<Self::Message> {
-        println!("loaded ui");
         column![
             row![
                 pick_list(
