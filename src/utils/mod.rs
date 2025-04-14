@@ -176,8 +176,8 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
 pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
 
     for base_addr in (0x0000..0x1000).step_by(16) {
-        println!("uploading {:4X}", base_addr);
         let addr = (base_addr as u16).to_be_bytes();
+        println!("{:4X}: {:X?}", base_addr, &data[(base_addr as usize)..(base_addr as usize)+16].to_vec());
         serial_write(
             vec![addr[0], addr[1]],
             data[(base_addr as usize)..(base_addr as usize)+16].to_vec()
