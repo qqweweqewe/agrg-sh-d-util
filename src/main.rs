@@ -1,12 +1,12 @@
 mod utils;
 mod styles;
 
-
-
-use std::{sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
+use std::time::Duration;
 
 use iced::{
-    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
+    alignment::Horizontal, 
+    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, 
+    Alignment, Application, Length, Settings
 };
 use chrono::Local;
 
@@ -45,7 +45,7 @@ enum AgrgMsg {
 }
 
 struct Agrg {
-    keepalive_lock: Arc<AtomicBool>,
+    keepalive: bool,
     tab: Tab,
     ports: Vec<String>,
     port: Option<String>,
@@ -67,7 +67,7 @@ impl Application for Agrg {
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         (
             Self {
-                keepalive_lock: Arc::new(AtomicBool::new(false)),
+                keepalive: false,
                 agrg: None,
                 chipset_id: None,
                 custom_desc: None,
@@ -127,13 +127,13 @@ impl Application for Agrg {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             AgrgMsg::PingKeepAlive => {
-                if self.keepalive_lock.load(Ordering::Relaxed) {
+                if self.keepalive {
                     _ = utils::get_datetime();
                 }
             }
             AgrgMsg::ToggleKeepAlive => {
-                let current = self.keepalive_lock.load(Ordering::Relaxed);
-                self.keepalive_lock.store(!current, Ordering::Relaxed);
+                let current = self.keepalive;
+                self.keepalive = !current;
             },
             AgrgMsg::AdminPasswdEdited(str) => {
                 
@@ -252,9 +252,9 @@ impl Application for Agrg {
                 //     Ok(res) => res,
                 //     Err(_) => "Error".to_string()
                 // };
-                let current = self.keepalive_lock.load(Ordering::Relaxed);
+                let current = self.keepalive.clone();
                 if current {
-                    self.keepalive_lock.store(false, Ordering::Relaxed);
+                    self.keepalive = false;
                 }
 
                 self.data = vec![];
@@ -269,13 +269,13 @@ impl Application for Agrg {
                 // self.data = utils::mock::get_data()
 
                 if current {
-                    self.keepalive_lock.store(true, Ordering::Relaxed);
+                    self.keepalive = true;
                 }
             },
             AgrgMsg::MemUpload => {
-                let current = self.keepalive_lock.load(Ordering::Relaxed);
+                let current = self.keepalive.clone();
                 if current {
-                    self.keepalive_lock.store(false, Ordering::Relaxed);
+                    self.keepalive = false;
                 }
 
                 match self.data.as_slice() {
@@ -291,7 +291,7 @@ impl Application for Agrg {
                 }
                 
                 if current {
-                    self.keepalive_lock.store(true, Ordering::Relaxed);
+                    self.keepalive = true;
                 }
             }, 
             AgrgMsg::TimeSync => {
@@ -316,7 +316,7 @@ impl Application for Agrg {
 
             Space::new(0, 20),
             
-            Toggler::new(Some("KeepAlive".into()), self.keepalive_lock.load(Ordering::Relaxed), |_| { AgrgMsg::ToggleKeepAlive }),
+            Toggler::new(Some("KeepAlive".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
             
             Space::new(0, 20),
 
@@ -367,7 +367,7 @@ impl Application for Agrg {
                     // custom description
                     Text::new(
                         match &self.custom_desc {
-                            Some(thing) => thing.clone(),
+                            Some(thing) => thing.clone().replace("\n", " "),
                             None => String::new()
                         }
                     ),
@@ -375,7 +375,7 @@ impl Application for Agrg {
                     // agrg info
                     Text::new(
                         match &self.agrg {
-                            Some(thing) => thing.clone(),
+                            Some(thing) => thing.clone().replace("\n", " "),
                             None => String::new()
                         }
                     ),
@@ -384,7 +384,6 @@ impl Application for Agrg {
                     Text::new(
                         match &self.chipset_id {
                             Some(thing) => {
-                                println!("{}", &thing);
                                 format!("chipset_serial:{}", thing)
                             },
                             None => String::new()
