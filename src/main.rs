@@ -65,6 +65,8 @@ impl Application for Agrg {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        let mut v = vec![0x00; 16];
+        v.resize(4096, 0xff);
         (
             Self {
                 keepalive: false,
@@ -78,7 +80,7 @@ impl Application for Agrg {
                     Some(ports) => ports
                 },
                 port: None,
-                data: Vec::new(),
+                data: v,
                 //time: String::new()
                 time: Local::now().format("%H:%M:%S %d.%m.%Y").to_string(),
                 settings_map: vec![
