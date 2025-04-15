@@ -202,7 +202,11 @@ pub fn get_text() -> Option<String> {
     }
 }
 
-pub fn set_text(input: Vec<u8>) {
+pub fn set_text(mut input: &mut Vec<u8>) {
+    let msg = input.resize(64, 0xFF);
+    let mut tx = vec![0x82, 0x00, 0x00, 0x40];
+    tx.append(&mut input);
+    atomic_serial_exchange(tx).unwrap();
 }
 
 // no prog mode here

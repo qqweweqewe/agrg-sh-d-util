@@ -41,7 +41,16 @@ enum AgrgMsg {
     ImportSettings,
     MemUpload,
     TimeSync,
+    MemoryOperation(OpMsg),
     CardEdited(usize, bool, String), // index / UID(0) or PIN(1) / new_value
+}
+
+#[derive(Debug, Clone)]
+enum OpMsg {
+    DumpStart,
+    UploadStart,
+    Progress(f32),
+    End(Result<(), String>)
 }
 
 struct Agrg {
@@ -52,10 +61,19 @@ struct Agrg {
     data: Vec<u8>,
     time: String,
     settings_map: Vec<Vec<String>>,
-    
+    current_operation: Option<OperationType>,
+    progress: f32,
+
+
     agrg: Option<String>,
     chipset_id: Option<String>,
     custom_desc: Option<String>
+}
+
+#[derive(Debug, Clone)]
+enum OperationType {
+    Dump,
+    Upload,
 }
 
 impl Application for Agrg {
@@ -71,6 +89,8 @@ impl Application for Agrg {
                 agrg: None,
                 chipset_id: None,
                 custom_desc: None,
+                progress: 0.0,
+                current_operation: None,
 
                 tab: Tab::Journal,
                 ports: match utils::get_available_ports() {
@@ -126,6 +146,9 @@ impl Application for Agrg {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
+            AgrgMsg::MemoryOperation(_) => {
+
+            },
             AgrgMsg::PingKeepAlive => {
                 println!("pinging..");
                 if self.keepalive {
@@ -245,10 +268,6 @@ impl Application for Agrg {
                 _ = utils::cards::export_bin(self.data[0x0010..=0x0fff].to_vec(), self.custom_desc.clone().unwrap());
             },
             AgrgMsg::MemDump => {
-                // self.time = match utils::get_datetime() {
-                //     Ok(res) => res,
-                //     Err(_) => "Error".to_string()
-                // };
                 let current = self.keepalive.clone();
                 if current {
                     self.keepalive = false;
@@ -301,6 +320,8 @@ impl Application for Agrg {
     } 
 
     fn view(&self) -> iced::Element<Self::Message> {
+        let is_working = self.current_operation.is_some();
+
         column![
             row![
                 pick_list(
@@ -318,10 +339,45 @@ impl Application for Agrg {
             Space::new(0, 20),
 
             row![
-                button("Load data").on_press(AgrgMsg::MemDump),
+                button("Load data")
+                    .on_press_maybe(if is_working { 
+                        None 
+                    } 
+                    else { 
+                        Some(AgrgMsg::MemoryOperation(OpMsg::DumpStart)) 
+                    }),
 
-                button("Upload data").on_press(AgrgMsg::MemUpload)
+                button("Upload data").on_press_maybe(if is_working { 
+                        None 
+                    } 
+                    else { 
+                        Some(AgrgMsg::MemoryOperation(OpMsg::UploadStart)) 
+                    })
             ].spacing(20),
+
+            // Progress overlay
+            if let Some(op_type) = &self.current_operation {
+                let label = match op_type {
+                    OperationType::Dump => "Dumping Memory...",
+                    OperationType::Upload => "Uploading Memory...",
+                };
+                container(
+                    column![
+                        Text::new(label),
+                        iced::widget::progress_bar(0.0..=1.0, self.progress)
+                            .width(300)
+                            .height(20),
+                        Text::new(format!("{:.1}%", self.progress * 100.0)),
+                        button("Cancel").on_press(AgrgMsg::MemoryOperation(OpMsg::End(Err("Cancelled".into()))))
+                    ]
+                    .align_items(Alignment::Center)
+                    .spacing(10)
+                )
+                .padding(20)
+                .into()
+            } else {
+                Space::new(0, 0).into()
+            },
 
             Space::new(0, 20),
             
@@ -664,4 +720,5 @@ fn sanitize_admin_passwd(input: &str, max_length: usize) -> String {
         cleaned
     }
 }
+
 
