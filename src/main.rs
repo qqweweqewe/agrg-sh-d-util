@@ -191,7 +191,11 @@ impl Application for Agrg {
                     panic!("Invalid/Corrupted file");
                 }
 
-                 self.data[0x0010..0x1000].copy_from_slice(&new_data);
+                if self.data.len() < 256*16 {
+                    self.data.resize(256*16, 0xff);
+                }
+
+                self.data[0x0010..0x1000].copy_from_slice(&new_data);
                 
             },
             AgrgMsg::JournalTab => self.tab = Tab::Journal,
@@ -210,6 +214,10 @@ impl Application for Agrg {
 
                 if new_data.len() != 16 {
                     panic!("Invalid/Corrupted Settings binary");
+                }
+
+                if self.data.len() < 16 {
+                    self.data.resize(16, 0xff);
                 }
 
                 self.data[0x0000..0x0010].copy_from_slice(&new_data);
@@ -472,7 +480,10 @@ fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
 
 fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
-        [] => Text::new("No Card data available").height(Length::Fill).into(),
+        [] => column![ 
+                Text::new("No Card data available").height(Length::Fill),
+                button("Import").on_press(AgrgMsg::ImportCards)
+            ].into(),
         _ => {
             let chunks: Vec<(String, String)> = data[0x0010..=0x0fff]
                 .chunks(16)
@@ -549,7 +560,10 @@ fn sanitize_pin(input: &str, max_length: usize) -> String {
 
 fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
-        [] => Text::new("No Data loaded").height(Length::Fill).into(),
+        [] => column![
+            Text::new("No Data loaded").height(Length::Fill),
+            button("Import").on_press(AgrgMsg::ImportSettings)
+        ].into(),
         _ => {    
             // Convert admin password bytes to string, ensuring we only process valid digits
             let admin_passwd: String = data[0x000A..0x0010]
