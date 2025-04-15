@@ -28,76 +28,76 @@ pub fn set_port(port: String) {
 
 // static mut PORT: String = String::new();
 
-// TODO: implement passing port as an arg
-// fn atomic_serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
-//     // config or something??
-// //  let settings = SerialPortSettings {
-// //        baud_rate: 38400,
-// //        data_bits: serialport::DataBits::Eight,
-// //        stop_bits: serialport::StopBits::One,
-// //        parity: serialport::Parity::None,
-// //        flow_control: serialport::FlowControl::None,
-// //        timeout: Duration::from_millis(100),
-// //    };
+//TODO: implement passing port as an arg
+fn atomic_serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>> {
+    // config or something??
+//  let settings = SerialPortSettings {
+//        baud_rate: 38400,
+//        data_bits: serialport::DataBits::Eight,
+//        stop_bits: serialport::StopBits::One,
+//        parity: serialport::Parity::None,
+//        flow_control: serialport::FlowControl::None,
+//        timeout: Duration::from_millis(100),
+//    };
 
-//     // open
+    // open
 
-//     let port_name = PORT.lock().unwrap().clone();
+    let port_name = PORT.lock().unwrap().clone();
 
 
     
-//         let mut port = serialport::new(
-//             port_name, 
-//             38400
-//         ).open()?; 
+        let mut port = serialport::new(
+            port_name, 
+            38400
+        ).open()?; 
     
-//         // clear buffer
-//         port.flush()?;
+        // clear buffer
+        port.flush()?;
 
-//         // send
-//         port.write_all(&bin_message)?;
-//         port.flush()?;
+        // send
+        port.write_all(&bin_message)?;
+        port.flush()?;
 
-//         // wait for response
-//         std::thread::sleep(Duration::from_millis(50));
+        // wait for response
+        std::thread::sleep(Duration::from_millis(50));
 
-//         // read response
-//         let mut rx = Vec::new();
-//         let mut serial_buf: Vec<u8> = vec![0; 16]; // buffer
+        // read response
+        let mut rx = Vec::new();
+        let mut serial_buf: Vec<u8> = vec![0; 16]; // buffer
         
-//         loop {
-//             match port.read(&mut serial_buf) {
-//                 Ok(t) => {
-//                     rx.extend_from_slice(&serial_buf[..t]);
-//                     // break if less bytes than in buffer are read
-//                     if t < serial_buf.len() {
-//                         break;
-//                     }
-//                 }
-//                 Err(ref e) if e.kind() == io::ErrorKind::TimedOut => {
-//                     break; // timeout => no more data
-//                 }
-//                 Err(e) => return Err(e.into()),
-//             }
-//         }
-
-//         Ok(rx)
-// }
-
-fn atomic_serial_exchange(message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>>{
-    let mut file = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("log.txt")?;
-
-        for byte in &message {
-            write!(file, "{:02x}", byte)?;
+        loop {
+            match port.read(&mut serial_buf) {
+                Ok(t) => {
+                    rx.extend_from_slice(&serial_buf[..t]);
+                    // break if less bytes than in buffer are read
+                    if t < serial_buf.len() {
+                        break;
+                    }
+                }
+                Err(ref e) if e.kind() == io::ErrorKind::TimedOut => {
+                    break; // timeout => no more data
+                }
+                Err(e) => return Err(e.into()),
+            }
         }
 
-        writeln!(file, "\n");
-    
-    Ok(Vec::new())
+        Ok(rx)
 }
+
+// fn atomic_serial_exchange(message: Vec<u8>) -> Result<Vec<u8>, Box<Пенис>>{
+//     let mut file = OpenOptions::new()
+//         .append(true)
+//         .create(true)
+//         .open("log.txt")?;
+
+//         for byte in &message {
+//             write!(file, "{:02x}", byte)?;
+//         }
+
+//         writeln!(file, "\n");
+    
+//     Ok(Vec::new())
+// }
 
 fn serial_write(addr: Vec<u8>, mut data: Vec<u8>) -> Result<(), Box<dyn Error>> {
     let mut tx = vec![0x02, 0x10];
