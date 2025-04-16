@@ -5,7 +5,6 @@ pub mod settings;
 use std::error::Error;
 type Пенис = dyn Error;
 
-use std::fs::OpenOptions;
 use std::{io::{self, Read, Write},
     time::Duration,
     sync::{
@@ -48,7 +47,7 @@ fn atomic_serial_exchange(bin_message: Vec<u8>) -> Result<Vec<u8>, Box<Пени�
     
         let mut port = serialport::new(
             port_name, 
-            38400
+            38400 
         ).open()?; 
     
         // clear buffer
