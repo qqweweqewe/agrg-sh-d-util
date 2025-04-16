@@ -238,6 +238,7 @@ impl Application for Agrg {
                 utils::set_port(self.port.clone().expect("no available ports")); 
                 self.agrg = utils::agrg_text_info();
                 self.custom_desc = utils::get_text();
+                self.connected = utils::check_handle(self.port.clone().unwrap())
             },
             AgrgMsg::RefreshPorts => {
                 self.ports = match utils::get_available_ports() {
@@ -319,7 +320,7 @@ impl Application for Agrg {
         println!("{}", self.connected);
         column![
             row![
-                Text::new( if utils::check_handle(self.port.clone().unwrap()) { "o" } else { "x" }),
+                Text::new( if self.connected { "o" } else { "x" }),
 
                 pick_list(
                     self.ports.clone(),
