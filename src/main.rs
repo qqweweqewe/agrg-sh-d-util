@@ -318,7 +318,7 @@ impl Application for Agrg {
     fn view(&self) -> iced::Element<Self::Message> {
         column![
             row![
-                Container::new( if self.connected { "o" } else { "x" })
+                Text::new( if self.connected { "o" } else { "x" })
                     .width(20)
                     .height(20),
 
@@ -420,7 +420,6 @@ impl Agrg {
 }
 
 // tab ui functions
-
 fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
     match data.len() {
         0..0x1000 => Text::new("No journal loaded").height(Length::Fill).into(),

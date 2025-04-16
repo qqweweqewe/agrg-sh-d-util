@@ -36,7 +36,10 @@ fn check_handle(port: String) -> bool {
 }
 
 pub fn scan_ports() -> Option<String> {
+    println!("Scanning ports");
     let ports = get_available_ports();
+    println!("Found ports: {:?}", &ports);
+
     match ports {
         Some(ports) => {
             
@@ -54,7 +57,7 @@ pub fn scan_ports() -> Option<String> {
             set_port(String::new());
             None
         },
-        None => None
+        None => { println!("handle not found"); None }
     }
 }
 
