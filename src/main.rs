@@ -329,7 +329,7 @@ impl Application for Agrg {
                         AgrgMsg::SerialChoice
                     ).placeholder("Выбор COM").width(200),
                     button("Обновить").on_press(AgrgMsg::RefreshPorts)
-                ].width(Length::Fill),
+                ].spacing(20).padding(10).width(Length::Fill),
                 column![
                     // custom description
                     Text::new(
@@ -346,7 +346,7 @@ impl Application for Agrg {
                             None => String::new()
                         }
                     ),
-                ].width(Length::Fill)
+                ].spacing(20).width(Length::Fill)
             ].spacing(20),
 
             Space::new(0, 20),
@@ -386,7 +386,7 @@ impl Application for Agrg {
                     settings(self.data.clone(), &self.settings_map, self.time.clone())
                 }
             },
-        ].width(Length::Fill)
+        ].width(Length::Fill).padding(20)
         .into()
     }
 
