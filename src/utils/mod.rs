@@ -25,7 +25,7 @@ pub fn set_port(port: String) {
     println!("Port set to: {}", *global_port);
 }
 
-fn check_handle(port: String) -> bool {
+pub fn check_handle(port: String) -> bool {
     set_port(port);
     match get_datetime() {
         Ok(val) => {
