@@ -13,7 +13,6 @@ use iced::{
 use chrono::Local;
 
 fn main() -> iced::Result {
-
     Agrg::run(Settings::default())
 }
 
@@ -348,8 +347,6 @@ impl Application for Agrg {
                     ),
                 ].spacing(20).width(Length::Fill)
             ].spacing(20),
-
-            Space::new(0, 20),
             
             Toggler::new(Some("KeepAlive".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
             
