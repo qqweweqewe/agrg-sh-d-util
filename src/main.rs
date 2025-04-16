@@ -316,6 +316,7 @@ impl Application for Agrg {
     } 
 
     fn view(&self) -> iced::Element<Self::Message> {
+        println!("{}", self.connected);
         column![
             row![
                 Text::new( if self.connected { "o" } else { "x" })
