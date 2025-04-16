@@ -1,4 +1,4 @@
-#![cfg_attr(windows, windows_subsystem = "windows")]
+//#![cfg_attr(windows, windows_subsystem = "windows")]
 
 mod utils;
 mod styles;
@@ -8,7 +8,7 @@ use std::time::Duration;
 use iced::{
     alignment::Horizontal, 
     widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, 
-    Alignment, Application, Length, Settings
+    Alignment, Application, Length, Settings, Shadow
 };
 use chrono::Local;
 
@@ -54,9 +54,10 @@ struct Agrg {
     data: Vec<u8>,
     time: String,
     settings_map: Vec<Vec<String>>,
-    
+
+    connected: bool,
+
     agrg: Option<String>,
-    chipset_id: Option<String>,
     custom_desc: Option<String>
 }
 
@@ -69,19 +70,22 @@ impl Application for Agrg {
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let mut v = vec![0x00; 16];
         v.resize(4096, 0xff);
+
+        let port = utils::scan_ports();
         (
             Self {
                 keepalive: false,
                 agrg: None,
-                chipset_id: None,
                 custom_desc: None,
+
+                connected: port.is_some(),//HERE!!
 
                 tab: Tab::Journal,
                 ports: match utils::get_available_ports() {
                     None => vec![String::from("No ports found")],
                     Some(ports) => ports
                 },
-                port: None,
+                port: port,
                 data: v,
                 //time: String::new()
                 time: Local::now().format("%H:%M:%S %d.%m.%Y").to_string(),
@@ -233,7 +237,6 @@ impl Application for Agrg {
                 self.port = Some(s); 
                 utils::set_port(self.port.clone().expect("no available ports")); 
                 self.agrg = utils::agrg_text_info();
-                self.chipset_id = utils::chipset_id();
                 self.custom_desc = utils::get_text();
             },
             AgrgMsg::RefreshPorts => {
@@ -315,6 +318,10 @@ impl Application for Agrg {
     fn view(&self) -> iced::Element<Self::Message> {
         column![
             row![
+                Container::new( if self.connected { "o" } else { "x" })
+                    .width(20)
+                    .height(20),
+
                 pick_list(
                     self.ports.clone(),
                     self.port.clone(),
@@ -389,15 +396,6 @@ impl Application for Agrg {
                         }
                     ),
 
-                    // chipset id
-                    Text::new(
-                        match &self.chipset_id {
-                            Some(thing) => {
-                                format!("chipset_serial:{}", thing)
-                            },
-                            None => String::new()
-                        }
-                    )
                 ]
             ).height(100)
         ].width(Length::Fill)

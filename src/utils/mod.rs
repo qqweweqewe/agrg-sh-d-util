@@ -25,6 +25,39 @@ pub fn set_port(port: String) {
     println!("Port set to: {}", *global_port);
 }
 
+fn check_handle(port: String) -> bool {
+    set_port(port);
+    match get_datetime() {
+        Ok(val) => {
+            val != []
+        },
+        Err(_) => false,
+    }
+}
+
+pub fn scan_ports() -> Option<String> {
+    let ports = get_available_ports();
+    match ports {
+        Some(ports) => {
+            
+            if ports.len() == 1 {
+                if check_handle(ports[0].clone()) { return Some(ports[0].clone()) }
+            }
+            
+            for port in ports {
+                if check_handle(port.clone()) {
+                    println!("found handle on port {}", port);
+                    return Some(port)
+                    
+                };
+            }
+            set_port(String::new());
+            None
+        },
+        None => None
+    }
+}
+
 // static mut PORT: String = String::new();
 
 //TODO: implement passing port as an arg
@@ -236,17 +269,6 @@ pub fn agrg_text_info() -> Option<String> {
     }
 }
 
-// and no prog mode here
-pub fn chipset_id() -> Option<String> {
-    match atomic_serial_exchange(vec![0x83, 0x02, 0x00, 0x10]) {
-        Ok(res) => match res.as_slice() {
-            [] => { return None },
-            _ => Some(
-                hex::encode(res)
-            )
-        }
-        Err(_) => { None }
-    }
-}
+
 
 
