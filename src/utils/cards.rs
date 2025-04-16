@@ -17,7 +17,7 @@ pub fn export_bin(cards: Vec<u8>, uid: String) -> Result<(), Box<dyn Error>> {
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
     
     let file_path = FileDialog::new()
-        .set_title("Save File")
+        .set_title("Сохранить данные пользователей")
         .set_file_name(format!("cards_{}_{}.agrg", uid, timestamp))
         .save_file();
 
@@ -111,7 +111,7 @@ pub fn trim_empty(data: Vec<u8>) -> Vec<u8> {
 
 pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
     let file_path = FileDialog::new()
-        .set_title("Import File").pick_file();
+        .set_title("Импортировать данные пользователей").pick_file();
 
     if let Some(path) = file_path {
         fs::read(path)

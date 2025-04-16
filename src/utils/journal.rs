@@ -11,17 +11,17 @@ pub struct JournalEntry {
 }
 
 const EVENT_TYPES: [&str; 11] = [
-    "Power On", // 0x00
-    "Registered User", // 0x01
-    "Unknown UID", // 0x02
-    "Unknown PIN", // 0x03
+    "Подача питания", // 0x00
+    "Пользователь", // 0x01
+    "Незарегистрированный UID", // 0x02
+    "Незарегистрированный PIN", // 0x03
     "Unknown", // 0x04
     "Unknown", // 0x05
-    "Handle Unlocked", // 0x06
-    "Forced Unlock/Break In", // 0x07
-    "Handle Locked", // 0x08
-    "Programming Mode", // 0x09
-    "Wrong Admin Password", // 0x0A
+    "Рукоятка замка освобождена", // 0x06
+    "Принудительное освобождение замка/Взлом", // 0x07
+    "Рукоятка замка зафиксирована", // 0x08
+    "Вход в режим программирования", // 0x09
+    "Неверный PIN администратора", // 0x0A
 ];
 
 pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> {
@@ -43,9 +43,9 @@ pub fn journal_entry_to_string(entry: JournalEntry) -> Option<(String, String)> 
 
     // info construction
     let info = match entry.event_type.as_str() {
-        "Registered User" => { format!("{}", entry.user_id) },
-        "Unknown UID" => { format!("{:X}{}", entry.user_id, &bytestring[..bytestring.len()-2]) },
-        "Unknown PIN" => { format!("{}{}", entry.user_id, &bytestring[..10]) },
+        "Пользователь" => { format!("{}", entry.user_id) },
+        "Незарегистрированный UID" => { format!("{:X}{}", entry.user_id, &bytestring[..bytestring.len()-2]) },
+        "Незарегистрированный PIN" => { format!("{}{}", entry.user_id, &bytestring[..10]) },
 
         _ => String::new(),
     };
@@ -64,7 +64,7 @@ pub fn serializer(entry_vec: Vec<Option<(String, String)>>) -> Result<(), Box<dy
     let filename = format!("journal_{}.csv", timestamp);
 
     let file_path = rfd::FileDialog::new()
-        .set_title("Save File")
+        .set_title("Сохранение журнала событий")
         .set_file_name(&filename)
         .save_file();
 

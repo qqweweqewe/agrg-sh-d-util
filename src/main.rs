@@ -1,4 +1,4 @@
-//#![cfg_attr(windows, windows_subsystem = "windows")]
+#![cfg_attr(windows, windows_subsystem = "windows")]
 
 mod utils;
 mod styles;
@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use iced::{
     alignment::Horizontal, 
-    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, 
+    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Row, Space, Text, Toggler}, 
     Alignment, Application, Length, Settings
 };
 use chrono::Local;
@@ -69,7 +69,7 @@ impl Application for Agrg {
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let mut v = vec![0x00; 16];
-        v.resize(4096, 0xff);
+        v.resize(0x1000, 0xff);
 
         let port = utils::scan_ports();
         (
@@ -78,11 +78,11 @@ impl Application for Agrg {
                 agrg: None,
                 custom_desc: None,
 
-                connected: port.is_some(),//HERE!!
+                connected: port.is_some(),
 
                 tab: Tab::Journal,
                 ports: match utils::get_available_ports() {
-                    None => vec![String::from("No ports found")],
+                    None => vec![String::from("Нет доступных портов")],
                     Some(ports) => ports
                 },
                 port: port,
@@ -92,8 +92,8 @@ impl Application for Agrg {
                 settings_map: vec![
                     // mode
                     vec![
-                        "Card Reader".into(),
-                        "Controller".into()
+                        "Считыватель".into(),
+                        "Автономный контроллер".into()
                     ],
                     
                     // pinpad mode
@@ -101,22 +101,22 @@ impl Application for Agrg {
                         "Wiegand6".into(),
                         "Wiegand26(hex)".into(),
                         "Wiegand26(dec)".into(),
-                        "Pinpad Off".into()
+                        "OFF".into()
                     ],
 
                     // card reader mode
                     vec![
                         "Wiegand26".into(),
                         "Wiegand34".into(),
-                        "Card Reader Off".into()
+                        "OFF".into()
                     ],
 
                     // auto access mode
                     vec![
-                        "PIN or Card".into(),
+                        "PIN или UID".into(),
                         "PIN".into(),
-                        "Card".into(),
-                        "PIN and Card".into()
+                        "UID".into(),
+                        "PIN и UID".into()
                     ]
                 ]
             },
@@ -125,7 +125,7 @@ impl Application for Agrg {
     }
 
     fn title(&self) -> String {
-        "AGRG SH-D Utility".into()
+        "Программа настройки AGRG SH-D, v.1.0, 2025".into()
     }
 
     fn theme(&self) -> iced::Theme {
@@ -135,20 +135,20 @@ impl Application for Agrg {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
             AgrgMsg::PingKeepAlive => {
-                println!("pinging..");
+                println!("попытка пинга..");
                 if self.keepalive {
-                    println!("ping yes: {}", &self.keepalive);
+                    println!("успешно");
                     _ = utils::get_datetime();
                 }
             }
             AgrgMsg::ToggleKeepAlive => {
-                println!("toggling keepalive: {}", &self.keepalive);
+                println!("переключение режима сохранения соединения: {}", !&self.keepalive);
                 let current = self.keepalive;
                 self.keepalive = !current;
             },
             AgrgMsg::AdminPasswdEdited(str) => {
                 let replacements: Vec<u8> = str.chars()
-                    .map(|c| c.to_digit(10).expect("invalid digit") as u8)
+                    .map(|c| c.to_digit(10).expect("Некорректный символ") as u8)
                     .collect();
             
                 for (i, &new_byte) in replacements.iter().enumerate() {
@@ -172,9 +172,9 @@ impl Application for Agrg {
                 // convert hex string to bytes
                 let required_length = if is_uid { 10 } else { 6 };
                 let parsed_bytes = if is_uid {
-                    utils::cards::rfid_to_bytes(value).expect("invalid format")
+                    utils::cards::rfid_to_bytes(value).expect("некорректный формат")
                 } else {
-                    utils::cards::pin_to_bytes(value).expect("invalid format")
+                    utils::cards::pin_to_bytes(value).expect("некорректный формат")
                 };
 
                 if parsed_bytes.len() == required_length {
@@ -190,13 +190,13 @@ impl Application for Agrg {
                 let new_data = match utils::cards::import_bin() {
                     Ok(res) => res,
                     Err(_) => { 
-                        println!("Import failed. Try again");
+                        println!("Не удалось импортировать данные пользователей");
                         Vec::new()
                     }
                 };
                 
                 if new_data.len() != 255*16 {
-                    panic!("Invalid/Corrupted file");
+                    panic!("Некорректный/Поврежденный файл");
                 }
 
                 if self.data.len() < 256*16 {
@@ -215,13 +215,13 @@ impl Application for Agrg {
                 let new_data = match utils::settings::import_bin() {
                     Ok(res) => res,
                     Err(_) => { 
-                        println!("Import failed. Try again");
+                        println!("Не удалось импортировать настройки");
                         vec![0; 16]
                     }
                 };
 
                 if new_data.len() != 16 {
-                    panic!("Invalid/Corrupted Settings binary");
+                    panic!("Некорректный/Поврежденный файл настроек");
                 }
 
                 if self.data.len() < 16 {
@@ -235,14 +235,14 @@ impl Application for Agrg {
             },
             AgrgMsg::SerialChoice(s) => { 
                 self.port = Some(s); 
-                utils::set_port(self.port.clone().expect("no available ports")); 
+                utils::set_port(self.port.clone().expect("Порты не найдены")); 
                 self.agrg = utils::agrg_text_info();
                 self.custom_desc = utils::get_text();
                 self.connected = utils::check_handle(self.port.clone().unwrap())
             },
             AgrgMsg::RefreshPorts => {
                 self.ports = match utils::get_available_ports() {
-                    None => vec![String::from("No ports found")],
+                    None => vec![String::from("Порты не найдены")],
                     Some(ports) => ports
                 }
             },
@@ -250,7 +250,7 @@ impl Application for Agrg {
                 let journal_entries: Vec<Option<(String, String)>> = self.data[0x1000..self.data.len()]
                     .chunks(16) 
                     .map(|chunk| utils::journal::journal_entry_to_string(
-                        utils::journal::parse_journal_entry(chunk.to_vec()).expect("error processing journal entry")
+                        utils::journal::parse_journal_entry(chunk.to_vec()).expect("ошибка при обработке строки журнала")
                         )
                     )
                     .collect();
@@ -275,7 +275,7 @@ impl Application for Agrg {
                 self.data = match utils::mem_dump() {
                     Ok(data) => data,
                     Err(_) => {
-                        println!("ERR WRONG/INVALID PORT");
+                        println!("Порт неверный - нет данных");
                         Vec::new()
                     }
                 };
@@ -292,12 +292,12 @@ impl Application for Agrg {
                 }
 
                 match self.data.as_slice() {
-                    [] => println!("ERR WRONG/INVALID PORT"),
+                    [] => println!("Порт неверный - нет данных"),
                     _ => {
                         match utils::mem_upload(self.data[0x0000..0x1000].to_vec()) {
-                            Ok(_) => println!("Uploading.."),
+                            Ok(_) => println!("Обновление данных ручки.."),
                             Err(_) => {
-                                println!("ERR WRONG/INVALID PORT")
+                                println!("Порт неверный - нет данных")
                             }
                         }
                     }
@@ -308,7 +308,6 @@ impl Application for Agrg {
                 }
             }, 
             AgrgMsg::TimeSync => {
-                println!("Time byte reference\n {:?}", utils::get_datetime());
                 self.time = Local::now().format("%H:%M:%S %d.%m.%Y").to_string(); 
                 _ = utils::set_datetime(self.time.clone())
             }
@@ -321,15 +320,15 @@ impl Application for Agrg {
         column![
             // connection header
             row![
-                column![
+                row![
                     Text::new( if self.connected { "o" } else { "x" }),
 
                     pick_list(
                         self.ports.clone(),
                         self.port.clone(),
                         AgrgMsg::SerialChoice
-                    ).placeholder("Select a port").width(200),
-                    button("Refresh").on_press(AgrgMsg::RefreshPorts)
+                    ).placeholder("Выбор COM").width(200),
+                    button("Обновить").on_press(AgrgMsg::RefreshPorts)
                 ].width(Length::Fill),
                 column![
                     // custom description
@@ -357,18 +356,18 @@ impl Application for Agrg {
             Space::new(0, 20),
 
             row![
-                button("Load data").on_press_maybe(if self.connected { Some(AgrgMsg::MemDump) } else { None } ),
+                button("Выгрузка v").on_press_maybe(if self.connected { Some(AgrgMsg::MemDump) } else { None } ),
 
-                button("Upload data").on_press_maybe(if self.connected { Some(AgrgMsg::MemUpload) } else { None } )
+                button("Загрузка ^").on_press_maybe(if self.connected { Some(AgrgMsg::MemUpload) } else { None } )
             ].spacing(20),
 
             Space::new(0, 20),
             
             container(
                 row![
-                    button("Journal").on_press(AgrgMsg::JournalTab),
-                    button("Cards").on_press(AgrgMsg::CardsTab),
-                    button("Settings").on_press(AgrgMsg::SettingsTab)
+                    button("Журнал").on_press(AgrgMsg::JournalTab),
+                    button("Пользователи").on_press(AgrgMsg::CardsTab),
+                    button("Параметры").on_press(AgrgMsg::SettingsTab)
                 ].spacing(20),
             ).width(Length::Fill).align_x(Horizontal::Center),
 
@@ -411,7 +410,7 @@ impl Agrg {
 // tab ui functions
 fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
     match data.len() {
-        0..0x1000 => Text::new("No journal loaded").height(Length::Fill).into(),
+        0..0x1000 => Text::new("Нет данных").height(Length::Fill).into(),
         _ => {    
             let journal_entries: Vec<(String, String)> = data[0x1000..data.len()]
                 .chunks(16)
@@ -436,8 +435,8 @@ fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
                 .align_items(Alignment::Start);
 
             // headers
-            left_col = left_col.push(Text::new("Date").width(Length::Fill));
-            right_col = right_col.push(Text::new("Info").width(Length::Fill));
+            left_col = left_col.push(Text::new("Дата").width(Length::Fill));
+            right_col = right_col.push(Text::new("Событие").width(Length::Fill));
 
             // populate the columns
             for row in journal_entries {
@@ -455,7 +454,7 @@ fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
             container(
                 column![
                     // exporn btn
-                    button("Export CSV").on_press(AgrgMsg::ExportJournal),
+                    button("Экспорт CSV").on_press(AgrgMsg::ExportJournal),
 
                     // row of coluimns with content
                     scrollable(
@@ -471,8 +470,8 @@ fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
 fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
         [] => column![ 
-                Text::new("No Card data available").height(Length::Fill),
-                button("Import").on_press(AgrgMsg::ImportCards)
+                Text::new("Нет данных").height(Length::Fill),
+                button("Импортировать").on_press(AgrgMsg::ImportCards)
             ].into(),
         _ => {
             let chunks: Vec<(String, String)> = data[0x0010..=0x0fff]
@@ -485,9 +484,9 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
 
             // header row
             let header = row![
-                Text::new("Address").width(60),
-                Text::new("Card Data").width(200),
-                Text::new("PIN Data").width(120),
+                Text::new("№").width(20),
+                Text::new("UID").width(200),
+                Text::new("PIN").width(120),
             ].spacing(20);
 
             // card rows
@@ -521,8 +520,8 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
             container(
                 column![
                     row![
-                        button("Export").on_press(AgrgMsg::ExportCards),
-                        button("Import").on_press(AgrgMsg::ImportCards)
+                        button("Экспорт").on_press(AgrgMsg::ExportCards),
+                        button("Импорт").on_press(AgrgMsg::ImportCards)
                     ],
                     scrollable(card_rows).height(Length::Fill).width(Length::Fill)
                 ].spacing(10)
@@ -567,8 +566,8 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String) -> iced:
                 })
                 .collect();
 
-            let mut row = Row::new();
-            let headers = ["Working mode", "Pinpad mode", "Card reader mode", "Access mode"];
+            let mut row = Column::new();
+            let headers = ["Режим работы", "Формат кодонаборной панели", "Формат считывателя", "Режим доступа"];
 
             // pick list for each byte
             for (index, &byte) in data[0..4].iter().enumerate() {
@@ -584,12 +583,12 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String) -> iced:
 
             column![
                 row![
-                    button("Import").on_press(AgrgMsg::ImportSettings),
-                    button("Export").on_press(AgrgMsg::ExportSettings)
+                    button("Импорт").on_press(AgrgMsg::ImportSettings),
+                    button("Экспорт").on_press(AgrgMsg::ExportSettings)
                 ].spacing(20),
                 row,
                 column![
-                    Text::new("Admin Password"),
+                    Text::new("PIN Администратора"),
                     text_input(&admin_passwd, &admin_passwd)
                         .on_input(move |v| {
                             let cleaned = sanitize_admin_passwd(&v, 6);
