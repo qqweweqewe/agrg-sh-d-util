@@ -319,9 +319,7 @@ impl Application for Agrg {
         println!("{}", self.connected);
         column![
             row![
-                Text::new( if self.connected { "o" } else { "x" })
-                    .width(20)
-                    .height(20),
+                Text::new( if self.connected { "o" } else { "x" }),
 
                 pick_list(
                     self.ports.clone(),
