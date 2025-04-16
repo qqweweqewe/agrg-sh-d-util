@@ -8,7 +8,7 @@ use std::time::Duration;
 use iced::{
     alignment::Horizontal, 
     widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, 
-    Alignment, Application, Length, Settings, Shadow
+    Alignment, Application, Length, Settings
 };
 use chrono::Local;
 
@@ -319,67 +319,19 @@ impl Application for Agrg {
     fn view(&self) -> iced::Element<Self::Message> {
         println!("{}", self.connected);
         column![
+            // connection header
             row![
-                Text::new( if self.connected { "o" } else { "x" }),
-
-                pick_list(
-                    self.ports.clone(),
-                    self.port.clone(),
-                    AgrgMsg::SerialChoice
-                ).placeholder("Select a port").width(200),
-                button("Refresh").on_press(AgrgMsg::RefreshPorts),
-            ].spacing(20),
-
-            Space::new(0, 20),
-            
-            Toggler::new(Some("KeepAlive".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
-            
-            Space::new(0, 20),
-
-            row![
-                button("Load data").on_press(AgrgMsg::MemDump),
-
-                button("Upload data").on_press(AgrgMsg::MemUpload)
-            ].spacing(20),
-
-            Space::new(0, 20),
-            
-            container(
-                row![
-                    button("Journal").on_press(AgrgMsg::JournalTab),
-                    button("Cards").on_press(AgrgMsg::CardsTab),
-                    button("Settings").on_press(AgrgMsg::SettingsTab)
-                ].spacing(20),
-            ).width(Length::Fill).align_x(Horizontal::Center),
-            
-            Space::new(0, 20),
-
-            container(
-                row![
-                    Text::new(&self.time),
-                    button("Sync").on_press(AgrgMsg::TimeSync)
-                ].spacing(20)
-            ).width(Length::Fill).align_x(Horizontal::Center),
-
-            Space::new(0, 20),
-
-            match self.tab {
-                Tab::Journal => {
-                    journal(self.data.clone())
-                },
-                
-                Tab::Cards => {
-                    cards(self.data.clone())
-                },
-
-                Tab::Settings => {
-                    settings(self.data.clone(), &self.settings_map)
-                }
-            },
-            Space::new(0, 20),
-            Container::new(
                 column![
+                    Text::new( if self.connected { "o" } else { "x" }),
 
+                    pick_list(
+                        self.ports.clone(),
+                        self.port.clone(),
+                        AgrgMsg::SerialChoice
+                    ).placeholder("Select a port").width(200),
+                    button("Refresh").on_press(AgrgMsg::RefreshPorts)
+                ].width(Length::Fill),
+                column![
                     // custom description
                     Text::new(
                         match &self.custom_desc {
@@ -395,9 +347,46 @@ impl Application for Agrg {
                             None => String::new()
                         }
                     ),
+                ].width(Length::Fill)
+            ].spacing(20),
 
-                ]
-            ).height(100)
+            Space::new(0, 20),
+            
+            Toggler::new(Some("KeepAlive".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
+            
+            Space::new(0, 20),
+
+            row![
+                button("Load data").on_press_maybe(if self.connected { Some(AgrgMsg::MemDump) } else { None } ),
+
+                button("Upload data").on_press_maybe(if self.connected { Some(AgrgMsg::MemUpload) } else { None } )
+            ].spacing(20),
+
+            Space::new(0, 20),
+            
+            container(
+                row![
+                    button("Journal").on_press(AgrgMsg::JournalTab),
+                    button("Cards").on_press(AgrgMsg::CardsTab),
+                    button("Settings").on_press(AgrgMsg::SettingsTab)
+                ].spacing(20),
+            ).width(Length::Fill).align_x(Horizontal::Center),
+
+            Space::new(0, 20),
+
+            match self.tab {
+                Tab::Journal => {
+                    journal(self.data.clone())
+                },
+                
+                Tab::Cards => {
+                    cards(self.data.clone())
+                },
+
+                Tab::Settings => {
+                    settings(self.data.clone(), &self.settings_map, self.time.clone())
+                }
+            },
         ].width(Length::Fill)
         .into()
     }
@@ -559,7 +548,7 @@ fn sanitize_pin(input: &str, max_length: usize) -> String {
 }
 
 
-fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'static, AgrgMsg> {
+fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
         [] => column![
             Text::new("No Data loaded").height(Length::Fill),
@@ -609,7 +598,15 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>) -> iced::Element<'stat
                         .width(120)
                         .padding(5)
                 ],
+                container(
+                    row![
+                        Text::new(time),
+                        button("Sync").on_press(AgrgMsg::TimeSync)
+                    ].spacing(20)
+                ).width(Length::Fill).align_x(Horizontal::Center),
             ].spacing(20).height(Length::Fill).into()
+
+            
         }
     }
 }
