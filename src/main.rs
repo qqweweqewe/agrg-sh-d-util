@@ -442,7 +442,7 @@ impl Agrg {
 // tab ui functions
 fn journal(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
     match data.len() {
-        0..0x1000 => Text::new("Нет данных").height(Length::Fill).into(),
+        0..=0x1000 => Text::new("Нет данных").height(Length::Fill).into(),
         _ => {    
             let journal_entries: Vec<(String, String)> = data[0x1000..data.len()]
                 .chunks(16)
@@ -555,7 +555,9 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
                         button("Экспорт").on_press(AgrgMsg::ExportCards),
                         button("Импорт").on_press(AgrgMsg::ImportCards)
                     ].spacing(20),
-                    scrollable(card_rows).height(Length::Fill).width(Length::Fill)
+                    Container::new(
+                        scrollable(card_rows).height(Length::Fill)
+                    ).height(Length::Fill).width(Length::Fill).align_x(Horizontal::Center),
                 ].spacing(10)
             ).padding(10).into()
         }
@@ -626,7 +628,7 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                 column![
 
                     row![
-                        row.spacing(20),
+                        row.spacing(10),
                         Space::new(20, 0),
                         column![
                             Text::new("PIN Администратора"),
@@ -637,14 +639,18 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                                 })
                                 .width(120)
                                 .padding(5),
+                            // TIME CONTAINER
                             container(
-                                row![
-                                    Text::new(time),
-                                    button("Sync").on_press(AgrgMsg::TimeSync)
-                                ].spacing(20)
+                                column![
+
+                                    row![
+                                        Text::new(time),
+                                        button("Sync").on_press(AgrgMsg::TimeSync)
+                                    ].spacing(20)
+                                ]
                             ),
                             Space::new(0, 20),
-                        ],
+                        ].spacing(10),
                     ].spacing(20),
                     Space::new(0, 30),
                     // custom data input field with a save button
