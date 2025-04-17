@@ -612,6 +612,7 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                     button("Импорт").on_press(AgrgMsg::ImportSettings),
                     button("Экспорт").on_press(AgrgMsg::ExportSettings)
                 ].spacing(20),
+                Space::new(0, 20),
                 
                 // MAIN BODY
                 row![
@@ -626,12 +627,12 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                             })
                             .width(120)
                             .padding(5),
-                            container(
-                                row![
-                                    Text::new(time),
-                                    button("Sync").on_press(AgrgMsg::TimeSync)
-                                ].spacing(20)
-                            ).width(Length::Fill).align_x(Horizontal::Center),
+                        container(
+                            row![
+                                Text::new(time),
+                                button("Sync").on_press(AgrgMsg::TimeSync)
+                            ].spacing(20)
+                        ),
                         Space::new(0, 20),
                         // custom data input field with a save button
                         row![
@@ -645,7 +646,7 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                     ],
                 ],
                 
-            ].into()
+            ].width(Length::Fill).align_items(Alignment::Center).into()
         }
     }
 }

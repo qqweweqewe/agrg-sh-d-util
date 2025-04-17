@@ -239,7 +239,7 @@ pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
 
 // no prog mode here
 pub fn get_text() -> Option<String> {
-    match atomic_serial_exchange(vec![0x11, 0x00, 0x00, 0xFF]) {
+    match atomic_serial_exchange(vec![0x83, 0x00, 0x00, 0x40]) {
         Ok(res) => match res.as_slice() {
             [] => { return None },
             _ => Some(
