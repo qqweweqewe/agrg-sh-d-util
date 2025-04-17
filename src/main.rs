@@ -369,7 +369,7 @@ impl Application for Agrg {
                                 None => String::new()
                             }
                         )
-                    ).width(400).style(iced::theme::Container::Box),
+                    ).width(400).padding(10).style(iced::theme::Container::Box),
                     // custom description
                     Container::new(
                         Text::new(
@@ -378,7 +378,7 @@ impl Application for Agrg {
                                 None => String::new()
                             }
                         )
-                    ).width(400).style(iced::theme::Container::Box),
+                    ).width(400).padding(10).style(iced::theme::Container::Box),
                     
                 ].spacing(20).width(Length::Fill)
             ].spacing(20),
@@ -623,36 +623,39 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                 Space::new(0, 20),
                 
                 // MAIN BODY
-                row![
-                    row,
-                    Space::new(20, 0),
-                    column![
-                        Text::new("PIN Администратора"),
-                        text_input(&admin_passwd, &admin_passwd)
-                            .on_input(move |v| {
-                                let cleaned = sanitize_admin_passwd(&v, 6);
-                                AgrgMsg::AdminPasswdEdited(cleaned)
-                            })
-                            .width(120)
-                            .padding(5),
-                        container(
-                            row![
-                                Text::new(time),
-                                button("Sync").on_press(AgrgMsg::TimeSync)
-                            ].spacing(20)
-                        ),
-                        Space::new(0, 20),
-                        ],
-                        // custom data input field with a save button
-                        row![
-                            text_input(&placeholder, &placeholder)
+                column![
+
+                    row![
+                        row,
+                        Space::new(20, 0),
+                        column![
+                            Text::new("PIN Администратора"),
+                            text_input(&admin_passwd, &admin_passwd)
                                 .on_input(move |v| {
-                                    AgrgMsg::CustomDataChange(v)
+                                    let cleaned = sanitize_admin_passwd(&v, 6);
+                                    AgrgMsg::AdminPasswdEdited(cleaned)
                                 })
-                                .width(500),
-                            button("Сохранить").on_press(AgrgMsg::SaveCustomData)
+                                .width(120)
+                                .padding(5),
+                            container(
+                                row![
+                                    Text::new(time),
+                                    button("Sync").on_press(AgrgMsg::TimeSync)
+                                ].spacing(20)
+                            ),
+                            Space::new(0, 20),
                         ],
-                ],
+                    ],
+                    // custom data input field with a save button
+                    row![
+                        text_input(&placeholder, &placeholder)
+                            .on_input(move |v| {
+                                AgrgMsg::CustomDataChange(v)
+                            })
+                            .width(500),
+                        button("Сохранить").on_press(AgrgMsg::SaveCustomData)
+                    ],
+                ]
                 
             ].width(Length::Fill).align_items(Alignment::Center).into()
         }
