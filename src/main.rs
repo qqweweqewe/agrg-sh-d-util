@@ -6,8 +6,10 @@ mod logo;
 
 use std::time::Duration;
 
+use base64::{Engine as _, engine::general_purpose};
+
 use iced::{
-    alignment::Horizontal, widget::{button, column, container, image::Handle, pick_list, row, scrollable, text_input, Column, Container, Image, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
+    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Image, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
 };
 use chrono::Local;
 
@@ -70,7 +72,9 @@ impl Application for Agrg {
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         //logo init
-        let bytes = base64::decode(logo::LOGO).unwrap();
+        let bytes = general_purpose::STANDARD
+            .decode(logo::LOGO)
+            .expect("Invalid base64");
         
         // image handle from bytes
         let handle = iced::widget::image::Handle::from_memory(bytes);
