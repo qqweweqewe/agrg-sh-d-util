@@ -246,7 +246,7 @@ pub fn get_text() -> Option<String> {
             _ => Some(
                 match String::from_utf8(cards::trim_empty(res)) {
                     Ok(thing) => { println!("Пришло: {}", &thing); thing },
-                    Err(_) => String::new()
+                    Err(_) => { println!("Че реально в utf-8 не перевелось?"); String::new() }
                 }
             )
         }
