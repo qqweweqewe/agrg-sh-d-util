@@ -76,8 +76,14 @@ impl Application for Agrg {
         (
             Self {
                 keepalive: false,
-                agrg: None,
-                custom_desc: None,
+                agrg: match port {
+                    None => None,
+                    Some(_) => utils::agrg_text_info()
+                },
+                custom_desc: match port {
+                    None => None,
+                    Some(_) => utils::get_text()
+                },
 
                 connected: port.is_some(),
 
