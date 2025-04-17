@@ -288,8 +288,8 @@ pub fn get_text() -> Option<String> {
 
 pub fn trim_empty(data: Vec<u8>) -> Vec<u8> {
     let mut start = 0;
-    // iterate to find the first non-0xFF byte
-    while start < data.len() && data[start+1] == 0xFF {
+    // iterate forward to find the first non-0xFF byte
+    while start < data.len() && data[start] == 0xFF {
         start += 1;
     }
     data[start..].to_vec()
