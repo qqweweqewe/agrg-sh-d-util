@@ -227,6 +227,20 @@ pub fn mem_dump() -> Result<Vec<u8>, Box<dyn Error>> {
 pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
 
     for base_addr in (0x0000..0x1000).step_by(16) {
+        if base_addr == 0x0000 {
+            let mut settings1 = data[0x0000..0x0008].to_vec();
+            let mut settings2 = data[0xA..=0xF].to_vec();
+            let mut message1 = vec![0x02, 0x00, 0x00, 0x08];
+            let mut message2 = vec![0x02, 0x00, 0x00, 0x08];
+            
+            message1.append(&mut settings1);
+            message2.append(&mut settings2);
+
+            atomic_serial_exchange(message1);
+            atomic_serial_exchange(message2);
+            
+            continue;
+        }
         let addr = (base_addr as u16).to_be_bytes();
         println!("{:4X}: {:X?}", base_addr, &data[(base_addr as usize)..(base_addr as usize)+16].to_vec());
         serial_write(
