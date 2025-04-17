@@ -240,9 +240,9 @@ pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
 // no prog mode here
 pub fn get_text() -> Option<String> {
     println!("getting text");
-    match atomic_serial_exchange(vec![0x83, 0x00, 0x00, 0x40]) {
+    match atomic_serial_exchange(vec![131, 0x00, 0x00, 64]) {
         Ok(res) => match res.as_slice() {
-            [] => { return None },
+            [] => { println!("no response on text"); return None },
             _ => Some(
                 match String::from_utf8(cards::trim_empty(res)) {
                     Ok(thing) => { println!("Пришло: {}", &thing); thing },
@@ -250,7 +250,7 @@ pub fn get_text() -> Option<String> {
                 }
             )
         }
-        Err(_) => { None }
+        Err(_) => {println!("error getting text"); None }
     }
 }
 
