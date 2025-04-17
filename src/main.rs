@@ -9,7 +9,7 @@ use std::time::Duration;
 use base64::{Engine as _, engine::general_purpose};
 
 use iced::{
-    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Image, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
+    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Image, Row, Space, Text, Toggler}, Alignment, Application, Color, Length, Settings
 };
 use chrono::Local;
 
@@ -149,7 +149,9 @@ impl Application for Agrg {
     }
 
     fn theme(&self) -> iced::Theme {
-        iced::Theme::SolarizedDark
+        let theme = iced::Theme::SolarizedDark;
+        theme.palette().background = Color::from_rgb(0.0, 0.73, 0.89);
+        theme
     }
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
@@ -634,10 +636,12 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                 Space::new(0, 20),
                 
                 // MAIN BODY
-                column![
-                    row![
-                        Image::new(logo).height(200).width(200),
+                row![
+                    Image::new(logo).height(200).width(200),
+                    column![
                         row![
+                           
+    
                             row.spacing(10),
                             Space::new(20, 0),
                             column![
