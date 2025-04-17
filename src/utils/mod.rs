@@ -258,23 +258,22 @@ pub fn get_text() -> Option<String> {
     println!("getting text");
     match atomic_serial_exchange(vec![131, 0x00, 0x00, 64]) {
         Ok(res) => {
-            let cleaned = trim_empty(res);
+            let cleaned = cards::trim_empty(res);
             if cleaned.is_empty() {
                 println!("no response on text");
                 return None;
             }
             
-            // Choose one conversion method:
-            let s = match String::from_utf8(cleaned) {
-                Ok(thing) => thing,
-                Err(_) => {
-                    println!("Опять хуета бля");
-                    String::new()
-                }
-            };
-            
-            // Or for Latin-1:
-            // let s = cleaned.iter().map(|&b| b as char).collect::<String>();
+            let s = cleaned.iter()
+                .filter_map(|&b| {
+                    // Keep only ASCII characters (0-127)
+                    if b <= 127 {
+                        Some(b as char)
+                    } else {
+                        None  // Discard non-ASCII bytes
+                    }
+                })
+                .collect::<String>();
             
             println!("Пришло: {}", &s);
             Some(s)
@@ -284,15 +283,6 @@ pub fn get_text() -> Option<String> {
             None
         }
     }
-}
-
-pub fn trim_empty(data: Vec<u8>) -> Vec<u8> {
-    let mut start = 0;
-    // iterate forward to find the first non-0xFF byte
-    while start < data.len() && data[start] == 0xFF {
-        start += 1;
-    }
-    data[start..].to_vec()
 }
 
 pub fn set_text(input: Vec<u8>) {
@@ -308,21 +298,56 @@ pub fn set_text(input: Vec<u8>) {
 }
 
 // no prog mode here
+// pub fn agrg_text_info() -> Option<String> {
+//     match atomic_serial_exchange(vec![0x11, 0x00, 0x00, 0xFF]) {
+//         Ok(res) => match res.as_slice() {
+//             [] => { return None },
+//             _ => Some(
+//                 match String::from_utf8(trim_empty(res)) {
+//                     Ok(thing) => thing,
+//                     Err(_) => {
+//                         println!("агрг тоже хуета или его просто нет?"); 
+//                         String::new()
+//                     }
+//                 }
+//             )
+//         }
+//         Err(_) => { None }
+//     }
+// }
+
 pub fn agrg_text_info() -> Option<String> {
     match atomic_serial_exchange(vec![0x11, 0x00, 0x00, 0xFF]) {
-        Ok(res) => match res.as_slice() {
-            [] => { return None },
-            _ => Some(
-                match String::from_utf8(trim_empty(res)) {
-                    Ok(thing) => thing,
-                    Err(_) => String::new()
-                }
-            )
+        Ok(res) => {
+            if res.is_empty() {
+                println!("Empty response after trimming");
+                return None;
+            }
+
+            let s = res.iter()
+                .filter_map(|&b| {
+                    // Keep only ASCII characters (0-127)
+                    if b <= 127 {
+                        Some(b as char)
+                    } else {
+                        None  // Silently discard non-ASCII bytes
+                    }
+                })
+                .collect::<String>();
+
+            if s.is_empty() {
+                println!("Filtered out all characters as non-ASCII");
+                None
+            } else {
+                Some(s)
+            }
         }
-        Err(_) => { None }
+        Err(_) => {
+            println!("Communication error");
+            None
+        }
     }
 }
-
 
 
 
