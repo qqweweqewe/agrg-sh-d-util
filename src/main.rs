@@ -275,7 +275,8 @@ impl Application for Agrg {
                 self.data[0x0000..0x0010].copy_from_slice(&new_data);
             },
             AgrgMsg::SettingsUpdate(addr, val) => {
-                self.data[addr] = self.search(&val);
+                let setting_index = addr;
+                self.data[addr] = self.search(setting_index, &val);
             },
             AgrgMsg::SerialChoice(s) => { 
                 self.port = Some(s); 
@@ -450,15 +451,16 @@ impl Application for Agrg {
 }
 
 impl Agrg {
-    fn search(&self, val: &String) -> u8 {
-        for setting in self.settings_map.clone() {
-            for (id, entry) in setting.iter().enumerate() {
-                if val == entry { return id as u8 };
+    fn search(&self, setting_index: usize, val: &String) -> u8 {
+        if let Some(options) = self.settings_map.get(setting_index) {
+            for (id, entry) in options.iter().enumerate() {
+                if val == entry {
+                    return id as u8;
+                }
             }
-        };
-        
-        0
-    }    
+        }
+        0 
+    }
 }
 
 // tab ui functions
