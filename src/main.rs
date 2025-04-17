@@ -2,11 +2,12 @@
 
 mod utils;
 mod styles;
+mod logo;
 
 use std::time::Duration;
 
 use iced::{
-    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
+    alignment::Horizontal, widget::{button, column, container, image::Handle, pick_list, row, scrollable, text_input, Column, Container, Image, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
 };
 use chrono::Local;
 
@@ -54,7 +55,7 @@ struct Agrg {
     admin_paswd: String,
     time: String,
     settings_map: Vec<Vec<String>>,
-
+    logo: iced::widget::image::Handle,
     connected: bool,
 
     agrg: Option<String>,
@@ -68,12 +69,20 @@ impl Application for Agrg {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        //logo init
+        let bytes = base64::decode(logo::LOGO).unwrap();
+        
+        // image handle from bytes
+        let handle = iced::widget::image::Handle::from_memory(bytes);
+
+
         let mut v = vec![0x00; 16];
         v.resize(0x1000, 0xff);
 
         let port = utils::scan_ports();
         (
             Self {
+                logo: handle,
                 admin_paswd: String::new(),
                 keepalive: false,
                 agrg: match port {
@@ -422,7 +431,7 @@ impl Application for Agrg {
                 },
 
                 Tab::Settings => {
-                    settings(self.data.clone(), &self.settings_map, self.time.clone(), self.custom_desc.clone(), self.admin_paswd.clone())
+                    settings(self.data.clone(), &self.settings_map, self.time.clone(), self.custom_desc.clone(), self.admin_paswd.clone(), self.logo.clone())
                 }
             },
         ].width(Length::Fill).padding(20)
@@ -588,7 +597,7 @@ fn sanitize_pin(input: &str, max_length: usize) -> String {
 }
 
 
-fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_data: Option<String>, admin_passwd: String) -> iced::Element<'static, AgrgMsg> {
+fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_data: Option<String>, admin_passwd: String, logo: iced::widget::image::Handle) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
         [] => column![
             Text::new("No Data loaded").height(Length::Fill),
@@ -624,6 +633,8 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                 column![
 
                     row![
+                        Image::new(logo).height(100).width(100),
+
                         row.spacing(10),
                         Space::new(20, 0),
                         column![
