@@ -578,9 +578,9 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
                         button("Импорт").on_press(AgrgMsg::ImportCards)
                     ].spacing(20),
                     Container::new(
-                        scrollable(card_rows).height(Length::Fill)
+                        scrollable(card_rows).height(Length::Fill).width(400)
                     ).height(Length::Fill).width(Length::Fill).align_x(Horizontal::Center),
-                ].spacing(10)
+                ].spacing(10).align_items(Alignment::Center)
             ).padding(10).into()
         }
     }
