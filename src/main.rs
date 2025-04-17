@@ -136,7 +136,7 @@ impl Application for Agrg {
     }
 
     fn theme(&self) -> iced::Theme {
-        iced::Theme::CatppuccinMocha
+        iced::Theme::SolarizedDark
     }
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
