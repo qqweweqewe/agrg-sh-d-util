@@ -244,7 +244,7 @@ pub fn get_text() -> Option<String> {
             [] => { return None },
             _ => Some(
                 match String::from_utf8(cards::trim_empty(res)) {
-                    Ok(thing) => thing,
+                    Ok(thing) => { println!("Пришло: {}", &thing); thing },
                     Err(_) => String::new()
                 }
             )
