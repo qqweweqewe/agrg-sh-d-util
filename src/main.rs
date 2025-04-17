@@ -363,7 +363,6 @@ impl Application for Agrg {
     } 
 
     fn view(&self) -> iced::Element<Self::Message> {
-        println!("{}", self.connected);
         column![
             // connection header
             row![
