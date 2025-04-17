@@ -6,9 +6,7 @@ mod styles;
 use std::time::Duration;
 
 use iced::{
-    alignment::Horizontal, 
-    widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Row, Space, Text, Toggler}, 
-    Alignment, Application, Length, Settings
+    alignment::Horizontal, widget::{button, column, container, pick_list, row, scrollable, text_input, Column, Container, Row, Space, Text, Toggler}, Alignment, Application, Length, Settings
 };
 use chrono::Local;
 
@@ -363,21 +361,25 @@ impl Application for Agrg {
                     button("Обновить").on_press(AgrgMsg::RefreshPorts)
                 ].spacing(20).padding(10).width(Length::Fill),
                 column![
-                    // custom description
-                    Text::new(
-                        match &self.custom_desc {
-                            Some(thing) => thing.clone().replace("\n", " "),
-                            None => String::new()
-                        }
-                    ),
-                    
                     // agrg info
-                    Text::new(
-                        match &self.agrg {
-                            Some(thing) => thing.clone().replace("\n", " "),
-                            None => String::new()
-                        }
-                    ),
+                    Container::new(
+                        Text::new(
+                            match &self.agrg {
+                                Some(thing) => thing.clone().replace("\n", " "),
+                                None => String::new()
+                            }
+                        )
+                    ).width(400).style(iced::theme::Container::Box),
+                    // custom description
+                    Container::new(
+                        Text::new(
+                            match &self.custom_desc {
+                                Some(thing) => thing.clone().replace("\n", " "),
+                                None => String::new()
+                            }
+                        )
+                    ).width(400).style(iced::theme::Container::Box),
+                    
                 ].spacing(20).width(Length::Fill)
             ].spacing(20),
             
@@ -640,16 +642,16 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                             ].spacing(20)
                         ),
                         Space::new(0, 20),
+                        ],
                         // custom data input field with a save button
                         row![
                             text_input(&placeholder, &placeholder)
                                 .on_input(move |v| {
                                     AgrgMsg::CustomDataChange(v)
                                 })
-                                .width(120),
+                                .width(500),
                             button("Сохранить").on_press(AgrgMsg::SaveCustomData)
-                        ]
-                    ],
+                        ],
                 ],
                 
             ].width(Length::Fill).align_items(Alignment::Center).into()
