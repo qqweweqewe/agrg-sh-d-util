@@ -238,19 +238,47 @@ pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // no prog mode here
+// pub fn get_text() -> Option<String> {
+//     println!("getting text");
+//     match atomic_serial_exchange(vec![131, 0x00, 0x00, 64]) {
+//         Ok(res) => match res.as_slice() {
+//             [] => { println!("no response on text"); return None },
+//             _ => Some(
+//                 match String::from_utf8(cards::trim_empty(res)) {
+//                     Ok(thing) => { println!("Пришло: {}", &thing); thing },
+//                     Err(_) => { println!("Че реально в utf-8 не перевелось?"); String::new() }
+//                 }
+//             )
+//         }
+//         Err(_) => {println!("error getting text"); None }
+//     }
+// }
+
 pub fn get_text() -> Option<String> {
     println!("getting text");
     match atomic_serial_exchange(vec![131, 0x00, 0x00, 64]) {
-        Ok(res) => match res.as_slice() {
-            [] => { println!("no response on text"); return None },
-            _ => Some(
-                match String::from_utf8(cards::trim_empty(res)) {
-                    Ok(thing) => { println!("Пришло: {}", &thing); thing },
-                    Err(_) => { println!("Че реально в utf-8 не перевелось?"); String::new() }
-                }
-            )
+        Ok(res) => {
+            let cleaned = cards::trim_empty(res);
+            if cleaned.is_empty() {
+                println!("no response on text");
+                return None;
+            }
+            
+            // Choose one conversion method:
+            let s = cleaned.iter()
+                .map(|&b| if b <= 127 { b as char } else { '?' })  // ASCII with replacement
+                .collect::<String>();
+            
+            // Or for Latin-1:
+            // let s = cleaned.iter().map(|&b| b as char).collect::<String>();
+            
+            println!("Пришло: {}", &s);
+            Some(s)
         }
-        Err(_) => {println!("error getting text"); None }
+        Err(_) => {
+            println!("error getting text"); 
+            None
+        }
     }
 }
 
