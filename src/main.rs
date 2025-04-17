@@ -51,6 +51,7 @@ struct Agrg {
     ports: Vec<String>,
     port: Option<String>,
     data: Vec<u8>,
+    admin_paswd: String,
     time: String,
     settings_map: Vec<Vec<String>>,
 
@@ -73,6 +74,7 @@ impl Application for Agrg {
         let port = utils::scan_ports();
         (
             Self {
+                admin_paswd: String::new(),
                 keepalive: false,
                 agrg: match port {
                     None => None,
@@ -171,9 +173,12 @@ impl Application for Agrg {
                 self.keepalive = !current;
             },
             AgrgMsg::AdminPasswdEdited(str) => {
-                let replacements: Vec<u8> = str.chars()
+
+                let replacements: Vec<u8> = sanitize_admin_passwd(&str, 6).chars()
                     .map(|c| c.to_digit(10).expect("Некорректный символ") as u8)
                     .collect();
+
+                
             
                 for (i, &new_byte) in replacements.iter().enumerate() {
                     if i < 6 { // Ensure we only write 6 digits
@@ -296,6 +301,7 @@ impl Application for Agrg {
 
                 self.data = vec![];
 
+                
                 self.data = match utils::mem_dump() {
                     Ok(data) => data,
                     Err(_) => {
@@ -304,7 +310,8 @@ impl Application for Agrg {
                     }
                 };
                 // self.data = utils::mock::get_data()
-
+                self.admin_paswd = self.data[0xA..=0xF].iter().map(|n| n.to_string()).collect();
+                
                 if current {
                     self.keepalive = true;
                 }
@@ -383,7 +390,7 @@ impl Application for Agrg {
                 ].spacing(20).width(Length::Fill)
             ].spacing(20),
             
-            Toggler::new(Some("KeepAlive".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
+            Toggler::new(Some("Контроль соединения".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
             
             Space::new(0, 20),
 
@@ -415,7 +422,7 @@ impl Application for Agrg {
                 },
 
                 Tab::Settings => {
-                    settings(self.data.clone(), &self.settings_map, self.time.clone(), self.custom_desc.clone())
+                    settings(self.data.clone(), &self.settings_map, self.time.clone(), self.custom_desc.clone(), self.admin_paswd.clone())
                 }
             },
         ].width(Length::Fill).padding(20)
@@ -581,24 +588,13 @@ fn sanitize_pin(input: &str, max_length: usize) -> String {
 }
 
 
-fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_data: Option<String>) -> iced::Element<'static, AgrgMsg> {
+fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_data: Option<String>, admin_passwd: String) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
         [] => column![
             Text::new("No Data loaded").height(Length::Fill),
             button("Import").on_press(AgrgMsg::ImportSettings)
         ].into(),
         _ => {    
-            // Convert admin password bytes to string, ensuring we only process valid digits
-            let admin_passwd: String = data[0x000A..0x0010]
-                .iter()
-                .map(|&b| {
-                    if b <= 9 { // Only map valid single digits
-                        (b'0' + b) as char
-                    } else {
-                        '0' // Default to '0' for invalid values
-                    }
-                })
-                .collect();
 
             let placeholder = custom_data.unwrap_or("".to_string());
             let mut row = Column::new();
@@ -728,10 +724,7 @@ fn sanitize_admin_passwd(input: &str, max_length: usize) -> String {
         .take(max_length)
         .collect();
 
-    if cleaned.len() < max_length {
-        format!("{:0>6}", cleaned)
-    } else {
-        cleaned
-    }
+    format!("{:0<6}", cleaned)
+
 }
 
