@@ -254,6 +254,15 @@ pub fn get_text() -> Option<String> {
 }
 
 pub fn set_text(input: Vec<u8>) {
+    let mut append = input;
+    let mut tx = vec![0x82, 0x00, 0x00, 0x40];
+    
+    tx.append(&mut append);
+
+    match atomic_serial_exchange(tx) {
+        Ok(_) => {},
+        Err(_) => {}
+    }
 }
 
 // no prog mode here

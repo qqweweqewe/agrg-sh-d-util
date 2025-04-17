@@ -25,6 +25,8 @@ enum Tab {
 
 #[derive(Debug, Clone)]
 enum AgrgMsg {
+    CustomDataChange(String),
+    SaveCustomData,
     PingKeepAlive,
     ToggleKeepAlive,
     SettingsUpdate(usize, String),
@@ -133,6 +135,25 @@ impl Application for Agrg {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
+            AgrgMsg::SaveCustomData => {
+                let mut replacements: Vec<u8> = self.custom_desc.clone().unwrap().into_bytes();
+                
+                // if more that 64 bytes, take the first 64
+                if replacements.len() > 64 {
+                    replacements = replacements[..64].to_vec();
+                }
+                else {
+                    // pad replacements to 64 bytes
+                    replacements.resize(64, 0xff);
+                }
+
+                // send using utils::set_text()
+                utils::set_text(replacements)
+
+            },
+            AgrgMsg::CustomDataChange(str) => {
+                self.custom_desc = Some(str);
+            },
             AgrgMsg::PingKeepAlive => {
                 println!("попытка пинга..");
                 if self.keepalive {
@@ -320,7 +341,13 @@ impl Application for Agrg {
             // connection header
             row![
                 row![
-                    Text::new( if self.connected { "o" } else { "x" }),
+                    Text::new("o").style(
+                        if self.connected { 
+                            iced::Color::from_rgb(0.0, 1.0, 0.0) 
+                        } else { 
+                            iced::Color::from_rgb(1.0, 0.0, 0.0)
+                        }
+                    ),
 
                     pick_list(
                         self.ports.clone(),
@@ -380,7 +407,7 @@ impl Application for Agrg {
                 },
 
                 Tab::Settings => {
-                    settings(self.data.clone(), &self.settings_map, self.time.clone())
+                    settings(self.data.clone(), &self.settings_map, self.time.clone(), self.custom_desc.clone())
                 }
             },
         ].width(Length::Fill).padding(20)
@@ -496,7 +523,7 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
                 let address_text = format!("{}", address/16);
 
                 let card_row = row![
-                    Text::new(address_text).width(60),
+                    Text::new(address_text).width(20),
                     text_input(&chunk.0, &chunk.0)
                         .on_input(move |v| {
                             let cleaned = sanitize_hex_input(&v, 20);
@@ -519,7 +546,7 @@ fn cards(data: Vec<u8>) -> iced::Element<'static, AgrgMsg> {
                     row![
                         button("Экспорт").on_press(AgrgMsg::ExportCards),
                         button("Импорт").on_press(AgrgMsg::ImportCards)
-                    ],
+                    ].spacing(20),
                     scrollable(card_rows).height(Length::Fill).width(Length::Fill)
                 ].spacing(10)
             ).padding(10).into()
@@ -544,7 +571,7 @@ fn sanitize_pin(input: &str, max_length: usize) -> String {
 }
 
 
-fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String) -> iced::Element<'static, AgrgMsg> {
+fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_data: Option<String>) -> iced::Element<'static, AgrgMsg> {
     match data.as_slice() {
         [] => column![
             Text::new("No Data loaded").height(Length::Fill),
@@ -563,6 +590,7 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String) -> iced:
                 })
                 .collect();
 
+            let placeholder = custom_data.unwrap_or("".to_string());
             let mut row = Column::new();
             let headers = ["Режим работы", "Формат кодонаборной панели", "Формат считывателя", "Режим доступа"];
 
@@ -579,30 +607,42 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String) -> iced:
             }
 
             column![
+                // import export
                 row![
                     button("Импорт").on_press(AgrgMsg::ImportSettings),
                     button("Экспорт").on_press(AgrgMsg::ExportSettings)
                 ].spacing(20),
-                row,
-                column![
-                    Text::new("PIN Администратора"),
-                    text_input(&admin_passwd, &admin_passwd)
-                        .on_input(move |v| {
-                            let cleaned = sanitize_admin_passwd(&v, 6);
-                            AgrgMsg::AdminPasswdEdited(cleaned)
-                        })
-                        .width(120)
-                        .padding(5)
+                
+                // MAIN BODY
+                row![
+                    row,
+                    column![
+                        Text::new("PIN Администратора"),
+                        text_input(&admin_passwd, &admin_passwd)
+                            .on_input(move |v| {
+                                let cleaned = sanitize_admin_passwd(&v, 6);
+                                AgrgMsg::AdminPasswdEdited(cleaned)
+                            })
+                            .width(120)
+                            .padding(5),
+                            container(
+                                row![
+                                    Text::new(time),
+                                    button("Sync").on_press(AgrgMsg::TimeSync)
+                                ].spacing(20)
+                            ).width(Length::Fill).align_x(Horizontal::Center),
+                    ],
                 ],
-                container(
-                    row![
-                        Text::new(time),
-                        button("Sync").on_press(AgrgMsg::TimeSync)
-                    ].spacing(20)
-                ).width(Length::Fill).align_x(Horizontal::Center),
-            ].spacing(20).height(Length::Fill).into()
-
-            
+                // custom data input field with a save button
+                row![
+                    text_input(&placeholder, &placeholder)
+                        .on_input(move |v| {
+                            AgrgMsg::CustomDataChange(v)
+                        })
+                        .width(120),
+                    button("Сохранить").on_press(AgrgMsg::SaveCustomData)
+                ]
+            ].into()
         }
     }
 }
