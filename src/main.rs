@@ -626,7 +626,7 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                 column![
 
                     row![
-                        row,
+                        row.spacing(20),
                         Space::new(20, 0),
                         column![
                             Text::new("PIN Администратора"),
@@ -645,7 +645,8 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                             ),
                             Space::new(0, 20),
                         ],
-                    ],
+                    ].spacing(20),
+                    Space::new(0, 30),
                     // custom data input field with a save button
                     row![
                         text_input(&placeholder, &placeholder)
