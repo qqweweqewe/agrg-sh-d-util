@@ -616,6 +616,7 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                 // MAIN BODY
                 row![
                     row,
+                    Space::new(20, 0),
                     column![
                         Text::new("PIN Администратора"),
                         text_input(&admin_passwd, &admin_passwd)
@@ -631,17 +632,19 @@ fn settings(data: Vec<u8>, option_map: &Vec<Vec<String>>, time: String, custom_d
                                     button("Sync").on_press(AgrgMsg::TimeSync)
                                 ].spacing(20)
                             ).width(Length::Fill).align_x(Horizontal::Center),
+                        Space::new(0, 20),
+                        // custom data input field with a save button
+                        row![
+                            text_input(&placeholder, &placeholder)
+                                .on_input(move |v| {
+                                    AgrgMsg::CustomDataChange(v)
+                                })
+                                .width(120),
+                            button("Сохранить").on_press(AgrgMsg::SaveCustomData)
+                        ]
                     ],
                 ],
-                // custom data input field with a save button
-                row![
-                    text_input(&placeholder, &placeholder)
-                        .on_input(move |v| {
-                            AgrgMsg::CustomDataChange(v)
-                        })
-                        .width(120),
-                    button("Сохранить").on_press(AgrgMsg::SaveCustomData)
-                ]
+                
             ].into()
         }
     }
