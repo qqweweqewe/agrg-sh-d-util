@@ -117,7 +117,7 @@ pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
         fs::read(path)
     }
     else {
-        Ok(Vec::new())
+        Ok(vec![0xff; 4080])
     }
 
 

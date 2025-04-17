@@ -258,16 +258,20 @@ pub fn get_text() -> Option<String> {
     println!("getting text");
     match atomic_serial_exchange(vec![131, 0x00, 0x00, 64]) {
         Ok(res) => {
-            let cleaned = cards::trim_empty(res);
+            let cleaned = trim_empty(res);
             if cleaned.is_empty() {
                 println!("no response on text");
                 return None;
             }
             
             // Choose one conversion method:
-            let s = cleaned.iter()
-                .map(|&b| if b <= 127 { b as char } else { '?' })  // ASCII with replacement
-                .collect::<String>();
+            let s = match String::from_utf8(cleaned) {
+                Ok(thing) => thing,
+                Err(_) => {
+                    println!("Опять хуета бля");
+                    String::new()
+                }
+            };
             
             // Or for Latin-1:
             // let s = cleaned.iter().map(|&b| b as char).collect::<String>();
@@ -280,6 +284,15 @@ pub fn get_text() -> Option<String> {
             None
         }
     }
+}
+
+pub fn trim_empty(data: Vec<u8>) -> Vec<u8> {
+    let mut start = 0;
+    // iterate to find the first non-0xFF byte
+    while start < data.len() && data[start+1] == 0xFF {
+        start += 1;
+    }
+    data[start..].to_vec()
 }
 
 pub fn set_text(input: Vec<u8>) {
@@ -300,7 +313,7 @@ pub fn agrg_text_info() -> Option<String> {
         Ok(res) => match res.as_slice() {
             [] => { return None },
             _ => Some(
-                match String::from_utf8(cards::trim_empty(res)) {
+                match String::from_utf8(trim_empty(res)) {
                     Ok(thing) => thing,
                     Err(_) => String::new()
                 }

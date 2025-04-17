@@ -28,7 +28,7 @@ pub fn import_bin() -> Result<Vec<u8>, std::io::Error> {
         std::fs::read(path)
     }
     else {
-        Ok(Vec::new())
+        Ok(vec![0x00; 16])
     }
 
     
