@@ -173,19 +173,19 @@ impl Application for Agrg {
                 self.keepalive = !current;
             },
             AgrgMsg::AdminPasswdEdited(str) => {
-
-                let replacements: Vec<u8> = sanitize_admin_passwd(&str, 6).chars()
+                let cleaned = sanitize_admin_passwd(&str, 6);
+                let replacements: Vec<u8> = cleaned.chars()
                     .map(|c| c.to_digit(10).expect("Некорректный символ") as u8)
                     .collect();
-
-                
             
                 for (i, &new_byte) in replacements.iter().enumerate() {
                     if i < 6 { // Ensure we only write 6 digits
                         self.data[0x0A + i] = new_byte;
                     }
                 }
-            }
+                // Update the admin_paswd field with the cleaned value
+                self.admin_paswd = cleaned;
+            },
             
             AgrgMsg::CardsTab => self.tab = Tab::Cards,
             AgrgMsg::CardEdited(chunk_index, is_uid, value) => {
