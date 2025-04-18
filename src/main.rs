@@ -391,7 +391,7 @@ impl Application for Agrg {
                                 None => String::new()
                             }
                         )
-                    ).width(400).padding(10).style(iced::theme::Container::Box),
+                    ).width(200).padding(10),
                     // custom description
                     Container::new(
                         Text::new(
@@ -405,7 +405,7 @@ impl Application for Agrg {
                 ].spacing(20).width(Length::Fill)
             ].spacing(20),
             
-            Toggler::new(Some("Контроль соединения".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
+            Toggler::new(Some("Удержание соединения".into()), self.keepalive, |_| { AgrgMsg::ToggleKeepAlive }),
             
             Space::new(0, 20),
 

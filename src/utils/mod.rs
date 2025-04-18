@@ -236,8 +236,8 @@ pub fn mem_upload(data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
             message1.append(&mut settings1);
             message2.append(&mut settings2);
 
-            atomic_serial_exchange(message1);
-            atomic_serial_exchange(message2);
+            atomic_serial_exchange(message1)?;
+            atomic_serial_exchange(message2)?;
             
 
         } else {
