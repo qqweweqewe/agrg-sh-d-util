@@ -391,7 +391,7 @@ impl Application for Agrg {
                                 None => String::new()
                             }
                         )
-                    ).width(200).padding(10),
+                    ).width(200).padding(10).align_x(Horizontal::Right),
                     // custom description
                     Container::new(
                         Text::new(
@@ -400,7 +400,7 @@ impl Application for Agrg {
                                 None => String::new()
                             }
                         )
-                    ).width(400).padding(10).style(iced::theme::Container::Box),
+                    ).width(400).padding(10).align_x(Horizontal::Right).style(iced::theme::Container::Box),
                     
                 ].spacing(20).width(Length::Fill)
             ].spacing(20),
